@@ -2,16 +2,15 @@ import block
 import wallet
 
 MINING_DIFFICULTY = 5
-init_count = -1 #initial id count, accept ids <= 10
 
 class Node:
-	def __init__(self,NUM_OF_NODES=None):
+	def __init__(self, NUM_OF_NODES=None):
 		global init_count
-		self.NBC=100;
+		self.NBC = 100;
 		##set
 		print("node_init")
-		self.wallet=wallet.Wallet()
-		self.id=-1 # bootstrap will send the node's final ID
+		self.wallet = wallet.Wallet()
+		self.id = -1 # bootstrap will send the node's final ID
 		# self.valid_chain
 
 		# NUM_OF_NODES has value only for bootstrap node

@@ -22,12 +22,10 @@ class Blockchain:
 		self.block_list = []
 		
 	#create bootstrap_node and genesis block
-	def create_blockchain(self,NUM_OF_NODES):
-		bootstrap = node.Node(NUM_OF_NODES)
+	def create_blockchain(self):
 		genesis = block.Block()
 		self.block_list.append(genesis)
-		genesis_tans=transaction() # add parameters for init
-		return bootstrap
+		#genesis_tans=transaction() # add parameters for init
 
 	#add _validated_ block to blockchain by miners
 	def add_block(self,new_block):
