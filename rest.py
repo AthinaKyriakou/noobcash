@@ -1,4 +1,5 @@
-import requests
+import requests 
+import json
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 
@@ -11,18 +12,49 @@ import transaction
 import wallet
 
 
-### JUST A BASIC EXAMPLE OF A REST API WITH FLASK
-
-
-
 app = Flask(__name__)
 CORS(app)
-blockchain = Blockchain()
-
+blockchain = blockchain.Blockchain() #here we initialize our network and create the bootstrap node
+btsrp_url = "http://83.212.72.137:5000" #communication details for bootstrap node
+NUM_OF_NODES = 0
+myNode = node.Node()
 
 #.......................................................................................
+# REST services and functions
+#.......................................................................................
 
+# initialize the app and create blockchain
 
+@app.route('/init/<num_of_nodes>',methods=['GET'])
+def init_connection(num_of_nodes):
+	print("it works!")
+	NUM_OF_NODES = int(num_of_nodes)
+	print(NUM_OF_NODES)
+	blockchain.create_blockchain(NUM_OF_NODES) #creates bootstrap node, genesis block and blockchain
+	return render_template('app_start.html')
+
+# node request to connect to ring
+
+@app.route('/connect_node_req',methods=['GET'])
+def connect_request():
+    # TODO
+    print("node wants to connect")
+    myIP = str(request.environ['REMOTE_ADDR'])
+    # myPort = str(request.environ['REMOTE_PORT'])
+    myInfo = "http://"+myIP+":5000"
+    print(myInfo)
+    ## TODO: check response
+    message = {'ip':myIP,'port':"5000",'public_key':myNode.wallet.public_key}
+    m = json.dumps(message)
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    response = requests.post(btsrp_url+"/receive_node_req", data = m,headers = headers)
+    return "ok!"
+
+@app.route('/receive_node_req',methods=['POST'])
+def receive_node_req():
+	message = request.get_json()
+	print(message)
+	return "ok",300
 
 # get all transactions in the blockchain
 
@@ -45,4 +77,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     port = args.port
 
-    app.run(host='127.0.0.1', port=port)
+    app.run(host='0.0.0.0', port=port)

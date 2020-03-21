@@ -14,15 +14,17 @@ from uuid import uuid4
 
 
 
-class wallet:
+class Wallet:
 
-	def __init__():
+	def __init__(self):
 		##set
+		print("wallet_init")
+		rsa_key = RSA.generate(1024)
+		self.private_key = rsa_key.exportKey('PEM').decode()
+		self.public_key = rsa_key.publickey().exportKey('PEM').decode()
 
-		#self.public_key
-		#self.private_key
-		#self_address
+		#self.address
 		#self.transactions
 
 	def balance():
-
+		print("balance")
