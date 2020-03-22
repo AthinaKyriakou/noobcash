@@ -39,14 +39,19 @@ class Transaction:
         return SHA384.new(temp.encode()) #κρυπογραφεί τα στοιχεία του transaction που είναι σε utf8
 
     def sign_transaction(self):
-        """
-        Sign transaction with private key
-        """
         print("sign_transaction")
         hash_obj = self.hash() 
         private_key = RSA.importKey(self.sender_privkey) 
         signer = PKCS1_v1_5.new(private_key)
         self.id = hash_obj.hexdigest() #SET ID. This is an object from the Crypto.Hash package. It has been used to digest the message to sign. safer as a hex
         self.signature = base64.b64encode(signer.sign(hash_obj)).decode() #ισως να μπορουμε και με binascii. not sure why encoding&decoding is needed
-        print("sig:", self.signature)
         return self.signature
+		
+	 def verify_signature(self):
+	    '''Verifies with a public key from whom the data came that it was indeed 
+           signed by their private key'''
+	    print("verify signature")
+        rsa_key = RSA.importKey(self.sender.encode()) #sender public key
+        verifier = PKCS1_v1_5.new(rsa_key) 
+        hash_obj = self.hash()
+        return verifier.verify(hash_obj, base64.b64decode(self.signature)) #signature needed to be decoded
