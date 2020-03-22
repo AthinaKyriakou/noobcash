@@ -2,6 +2,7 @@ import block
 import wallet
 
 MINING_DIFFICULTY = 5
+CAPACITY = 5 # run capacity=1, 5, 10
 init_count = -1 #initial id count, accept ids <= 10
 
 class Node:
