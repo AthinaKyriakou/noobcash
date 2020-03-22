@@ -12,7 +12,7 @@ class Block:
 		#calculate self.hash
 		hash_data = {'prev':self.previousHash,'tmsp':self.timestamp, 'nonce': self.nonce}
 		tmp = json.dumps(trans) 
-        self.hash = SHA384.new(tmp.encode())
+		self.hash = SHA384.new(tmp.encode())
 	
 	# def myHash():
 	# 	#calculate self.hash
