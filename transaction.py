@@ -47,7 +47,7 @@ class Transaction:
         self.signature = base64.b64encode(signer.sign(hash_obj)).decode() #ισως να μπορουμε και με binascii. not sure why encoding&decoding is needed
         return self.signature
 		
-	 def verify_signature(self):
+	def verify_signature(self):
 	    '''Verifies with a public key from whom the data came that it was indeed 
            signed by their private key'''
 	    print("verify signature")
