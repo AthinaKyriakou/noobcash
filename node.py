@@ -2,6 +2,7 @@ import block
 import wallet
 import json
 import requests
+import transaction
 
 MINING_DIFFICULTY = 5
 CAPACITY = 5 # run capacity=1, 5, 10
@@ -43,9 +44,31 @@ class Node:
 			print('cannot register node')
 
 
-	def create_transaction(sender, receiver, signature):
+	def create_transaction(sender_wallet, receiver_public, amount):
 		#remember to broadcast it
 		print("create_transaction")
+		sum = 0
+		inputs = []
+		try:
+			if(sender_wallet.balance() < amount):
+				raise Exception("not enough money")
+
+			key=sender_wallet.public_key
+			for utxo in sender_wallet.utxos[key]:
+				sum=sum+utxo['amount']
+				inputs.append(utxo)
+				if (sum>=amount):
+					break
+			trxn= Transaction(key, sender_wallet.private_key, receiver_public, amount, inputs)
+			trxn.sign_transaction()
+			if(sum>amount):
+				trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
+			trxn.transaction_outputs.append({'id': trxn.id, 'to_who':trxn.receiver, 'amount': trxn.amount})
+			return trxn
+
+		except Exception as e:
+			print(f"create_transaction: {e.__class__.__name__}: {e}")
+			return None
 		
 
 	def broadcast_transaction():
