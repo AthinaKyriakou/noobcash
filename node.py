@@ -48,13 +48,17 @@ class Node:
 		print("create_transaction")
 		
 
-	def broadcast_transaction():
+	def broadcast_transaction(trans):
 		print("broadcast_transaction")
+		url = "broadcst_trans"
+		message = trans.__dict__ #returns attributes as keys, and their values as value
+		broadcast(message,url)
+		return
 
 
-	def validdate_transaction():
+	def validate_transaction():
 		#use of signature and NBCs balance
-		print("validdate_transaction")
+		print("validate_transaction")
 
 	def add_transaction_to_block():
 		#if enough transactions  mine
@@ -65,10 +69,16 @@ class Node:
 		print("mine_block")
 
 
-	def broadcast_block():
+	def broadcast_block(block):
 		print("broadcast_block")
+		url = "broadcst_block"
+		message = block.__dict__
+		return
 
-		
+	
+	def validate_block(self,block):
+		print("validate_block\n")
+		return
 
 	def valid_proof(other_parameters, difficulty=MINING_DIFFICULTY):
 		print("valid_proof")

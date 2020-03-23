@@ -29,7 +29,7 @@ myChain = blockchain.Blockchain()
 
 # bootstrap node initializes the app
 # create genesis block and add boostrap to dict to be broadcasted
-
+# OK
 @app.route('/init/<total_nodes>', methods=['GET'])
 def init_connection(total_nodes):
 	global TOTAL_NODES
@@ -44,7 +44,7 @@ def init_connection(total_nodes):
 
 
 # node requests to boostrap connect to the ring
-
+# OK
 @app.route('/connect', methods=['GET'])
 def connect_node_request():
 	print('Node wants to connect')
@@ -62,9 +62,49 @@ def connect_node_request():
 	else:
 		return myIP + ' pistolii'
 	
+# receive broadcasted transaction
+# CHECK
+@app.route('/broadcst_trans',methods=['POST'])
+def broadcst_trans():
+	print("node broadcasted a transaction")
+	tmp = request.get_json()
+	# TODO change init parameter names of transaction to make ie easier
+	# transaction = Transaction(**transaction)
+	sender = tmp.get("sender")
+	receiver = tmp.get("receiver")
+	amount = tmp.get("amount")
+	transId = tmp.get("id")
+	transaction_inputs = tmp.get("transaction_inputs")
+	transaction_outputs = tmp.get("transaction_outputs")
+	signature = tmp.get("signature")
+	sender_privkey = tmp.get("sender_privkey")
+	trans = transaction.Transaction(sender,sender_privkey,receiver,
+		amount,transaction_inputs,transaction_outputs,transId,signature)
+	if (myNode.validate_transaction(trans)):
+		print("Node %s: -Transaction from %s to %s well received\n"%(myNode.id,sender,receiver))
+	else:
+		print("Error: Illegal Transaction\n")
+	return "Broadcast transaction OK\n",200
+
+# receive broadcasted block
+# CHECK
+@app.route('/broadcst_block', methods = ['POST'])
+def broadcst_block():
+	tmp = request.get_json()
+	b = block.Block()
+	b.previousHash = tmp.get('previousHash')
+	b.timestamp = tmp.get('timestamp')
+	b.nonce = tmp.get('nonce')
+	b.listOfTransactions = tmp.get('listOfTransactions')
+	b.blockHash = tmp.get('hash')
+	if (myNode.validate_block(b)):
+		print("Node %s: -Block validated\n"%myNode.id)
+	else:
+		print("Error: Block rejected\n")
+	return "Blo broadcast OK\n",200
 
 # bootstrap handles node requests to join the ring
-
+# OK
 @app.route('/receive', methods=['POST'])
 def receive_node_request():
 	global NODE_COUNTER
