@@ -56,13 +56,15 @@ class Node:
 		return
 
 
-	def validate_transaction():
+	def validate_transaction(self,transaction):
 		#use of signature and NBCs balance
 		print("validate_transaction")
+		# return True
 
-	def add_transaction_to_block():
+	def add_transaction_to_block(transaction):
 		#if enough transactions  mine
 		print("add_transaction_to_block")
+
 
 
 	def mine_block():

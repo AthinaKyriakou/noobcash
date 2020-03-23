@@ -18,7 +18,7 @@ CORS(app)
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
-btsrp_url = 'http://83.212.72.137:5000' # communication details for bootstrap node
+btsrp_url = 'http://192.168.2.10:5000' # communication details for bootstrap node
 myNode = node.Node()
 myChain = blockchain.Blockchain()
 
@@ -55,12 +55,16 @@ def connect_node_request():
 	m = json.dumps(message)
 	headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 	response = requests.post(btsrp_url + "/receive", data = m, headers = headers)
-	potentialID = int(response.text)
+	
+	data = response.json() # dictionary containing id + chain 
+	potentialID = data.get('id')
+	current_chain = data.get('chain')
+	
 	if potentialID > 0:
 		myNode.id = potentialID
-		return myIP + ' accepted in the riiiing!'
+		return "Connection for IP: "+myIP + " established,\nOK\n",200
 	else:
-		return myIP + ' pistolii'
+		return "Conection for IP: "+myIP + " to ring refused, too many nodes\n",403
 	
 # receive broadcasted transaction
 # CHECK
@@ -100,8 +104,8 @@ def broadcst_block():
 	if (myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
 	else:
-		print("Error: Block rejected\n")
-	return "Blo broadcast OK\n",200
+		return "Error: Block rejected\n", 403
+	return "Block broadcast OK\n",200
 
 # bootstrap handles node requests to join the ring
 # OK
@@ -109,7 +113,6 @@ def broadcst_block():
 def receive_node_request():
 	global NODE_COUNTER
 	global TOTAL_NODES
-	global BROAD_BUDDIES
 	receivedMsg = request.get_json()
 	senderInfo = 'http://' + receivedMsg.get('ip') + ':' + receivedMsg.get('port')
 	print(senderInfo)
@@ -121,8 +124,17 @@ def receive_node_request():
 	else:
 		print('Too many nodes already ' + str(NODE_COUNTER))
 		print(myNode.ring)
+		return "Too many nodes already\n",403 #FORBIDDEN
 
-	return str(newID), 200
+	# successful addition to ring
+	new_data = {} # dictionary with id + current blockchain
+	new_data['id'] = newID
+	blocks = [] # list with blocks as dictionaries
+	for block in myChain.block_list:
+		blocks.append(block.__dict__)
+	new_data['chain'] = blocks
+	message = json.dumps(new_data)
+	return message, 200 # OK
 
 	
 # get all transactions in the blockchain
