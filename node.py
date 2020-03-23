@@ -14,7 +14,7 @@ class Node:
 		self.wallet=wallet.Wallet()
 		self.id=-1 # bootstrap will send the node's final ID
 		self.valid_chain=None
-		self.ring=[] #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
+		self.ring={} #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 
 
 	def broadcast(message,url):
@@ -30,11 +30,18 @@ class Node:
 	# def create_wallet():
 	# 	#create a wallet for this node, with a public key and a private key
 		# print("create_wallet")
+		
 	
-	def register_node_to_ring():
-		#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
-		#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
-		print("register_node")
+	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
+	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
+	def register_node_to_ring(self, nodeID, ip, port, public_key):
+		if self.id == 0:
+			print(self.id)
+			self.ring[nodeID] = {'ip': ip,'port': port,'public_key': public_key}
+			print('register_node')
+		else:
+			print('cannot register node')
+
 
 	def create_transaction(sender, receiver, signature):
 		#remember to broadcast it

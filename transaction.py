@@ -25,7 +25,7 @@ class Transaction:
         self.id = id #: το hash του transaction
         self.transaction_inputs = input #: λίστα από Transaction Input . previousOutputId
         self.transaction_outputs = [] #: λίστα από Transaction Output 
-        self.signature=signature		
+        self.signature = signature		
         self.sender_privkey = sender_privkey
 
 
