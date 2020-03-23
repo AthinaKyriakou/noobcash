@@ -3,6 +3,7 @@ import wallet
 import json
 import requests
 import transaction
+import copy
 
 MINING_DIFFICULTY = 5
 CAPACITY = 5 # run capacity=1, 5, 10
@@ -56,11 +57,11 @@ class Node:
 			key=sender_wallet.public_key
 			for utxo in sender_wallet.utxos[key]:
 				sum=sum+utxo['amount']
-				inputs.append(utxo)
+				inputs.append(utxo['id'])
 				if (sum>=amount):
 					break
 			trxn= Transaction(key, sender_wallet.private_key, receiver_public, amount, inputs)
-			trxn.sign_transaction()
+			trxn.sign_transaction() #set id & signature
 			if(sum>amount):
 				trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who':trxn.receiver, 'amount': trxn.amount})
@@ -75,9 +76,50 @@ class Node:
 		print("broadcast_transaction")
 
 
-	def validate_transaction():
+	def validate_transaction(self, t):
 		#use of signature and NBCs balance
 		print("validate_transaction")
+		try:
+			# verify signature
+			if not t.verify_signature():
+				raise Exception('invalid signature')
+			if t.sender == t.receiver:
+				raise Exception('sender must be different from recepient')
+			if t.amount <= 0:
+				raise Exception('negative amount?')
+			sender_utxos= copy.deepcopy(self.wallet.utxos[t.sender])
+			val_amount=0
+			for t_id in t.transaction_inputs:
+				found=False
+				for utxo in sender_utxos:
+					if utxo['id']== t_id and utxo['to_who']==t.sender:
+						found=True
+						val_amount += utxo['amount']
+						sender_utxos.remove(utxo)
+						break
+				if not found:
+					raise Exception('missing transaction inputs')
+			temp = []
+			if (val_amount > t.amount):
+				temp.append({'id': t.id, 'to_who': t.sender, 'amount': val_amount - t.amount })
+				temp.append({'id': t.id, 'to_who': t.sender, 'amount':  t.amount })
+			if (temp != t.transaction_outputs):
+				raise Exception('Wrong outputs')
+
+			if(len (t.transaction_outputs) == 2):
+				sender_utxos.append(t.transaction_outputs[0]) #removed old utxos , added
+				self.wallet.utxos[t.sender]=sender_utxos
+				self.wallet.utxos[t.receiver].append(t.transaction_outputs[1])
+			else:
+				self.wallet.utxos[t.sender]=sender_utxos
+				self.wallet.utxos[t.receiver].append(t.transaction_outputs[0])
+
+			return 'added',t
+
+		except Exception as e:
+			print(f"validate transaction: {e.__class__.__name__}: {e}")
+			return 'error', None
+
 
 
 	def add_transaction_to_block():
