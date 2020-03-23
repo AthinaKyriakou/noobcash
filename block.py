@@ -1,19 +1,23 @@
 import blockchain
+import datetime;
+
 class Block:
+	#def __init__(self, previousHash, nonce):	# to be used once implemented
 	def __init__(self):
 		##set
-		print("block_init")
-		#self.previousHash
-		#self.timestamp
-		#self.hash
-		#self.nonce
-		#self.listOfTransactions
-	
-	def myHash():
+		print('block_init')
+		#self.previousHash=previousHash
+		self.timestamp=datetime.datetime.now().timestamp()
+		#self.nonce=nonce
+		self.listOfTransactions=[]
 		#calculate self.hash
-		print("myHash")
-
-
-	def add_transaction(transaction, blockchain):
-		#add a transaction to the block
-		print("hello")
+		#hash_data = {'prev':self.previousHash,'tmsp':self.timestamp, 'nonce': self.nonce}
+		#tmp = json.dumps(trans) 
+		#self.hash = SHA384.new(tmp.encode())
+	
+	# def myHash():
+	# 	#calculate self.hash
+	# 	print("myHash")
+	# 	hash_data = {'prev':self.previousHash,'tmsp':self.timestamp, 'nonce': self.nonce}
+	# 	tmp = json.dumps(trans) 
+ #        self.hash = SHA384.new(tmp.encode())
