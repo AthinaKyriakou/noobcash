@@ -12,7 +12,7 @@ class Block:
 		#self.nonce=nonce
 		self.listOfTransactions=[]
 		#calculate self.hash
-		hash_data = OrderedDict([('prev':self.previousHash),('tmsp':self.timestamp), ('nonce': self.nonce)])
+		hash_data = OrderedDict([('prev', self.previousHash),('tmsp', self.timestamp), ('nonce', self.nonce)])
 		tmp = json.dumps(hash_data) 
 		self.hash = SHA384.new(tmp.encode())
 	
