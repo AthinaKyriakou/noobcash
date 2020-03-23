@@ -75,9 +75,10 @@ class Node:
 		print("broadcast_transaction")
 
 
-	def validdate_transaction():
+	def validate_transaction():
 		#use of signature and NBCs balance
-		print("validdate_transaction")
+		print("validate_transaction")
+
 
 	def add_transaction_to_block():
 		#if enough transactions  mine
