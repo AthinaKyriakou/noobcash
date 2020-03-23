@@ -9,7 +9,7 @@ init_count = -1 #initial id count, accept ids <= 10
 
 class Node:
 	def __init__(self,NUM_OF_NODES=None):
-		print("node_init")
+		print('node_init')
 		self.NBC=100;
 		self.wallet=wallet.Wallet()
 		self.id=-1 # bootstrap will send the node's final ID

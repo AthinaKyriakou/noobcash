@@ -18,7 +18,7 @@ class Transaction:
 
     def __init__(self, sender, sender_privkey, recipient, value, input, id=None, signature=None):
         ##set
-        print("transaction_init")
+        print('transaction_init')
         self.sender = sender #public key του wallet από το οποίο προέρχονται τα χρήματα
         self.receiver = recipient #public key του wallet στο οποίο θα καταλήξουν τα χρήματα
         self.amount = value #: το ποσό που θα μεταφερθεί
@@ -30,27 +30,27 @@ class Transaction:
 
 
     def to_dict(self):
-        print("to_dict")
+        print('to_dict')
         return OrderedDict([('sender', self.sender), ('receiver', self.receiver), ('amount', self.amount), ('transaction_inputs', self.transaction_inputs), ('transaction_outputs', self.transaction_outputs), ('id', self.id), ('signature', self.signature)])
-    
+
     def hash(self):
         trans = OrderedDict([('sender', self.sender), ('receiver', self.receiver), ('amount', self.amount), ('transaction_inputs', self.transaction_inputs)])
         temp=json.dumps(trans) 
         return SHA384.new(temp.encode()) #κρυπογραφεί τα στοιχεία του transaction που είναι σε utf8
 
     def sign_transaction(self):
-        print("sign_transaction")
+        print('sign_transaction')
         hash_obj = self.hash() 
         private_key = RSA.importKey(self.sender_privkey) 
         signer = PKCS1_v1_5.new(private_key)
         self.id = hash_obj.hexdigest() #SET ID. This is an object from the Crypto.Hash package. It has been used to digest the message to sign. safer as a hex
         self.signature = base64.b64encode(signer.sign(hash_obj)).decode() #ισως να μπορουμε και με binascii. not sure why encoding&decoding is needed
         return self.signature
-		
-	 def verify_signature(self):
-	    '''Verifies with a public key from whom the data came that it was indeed 
-           signed by their private key'''
-	    print("verify signature")
+ 
+    def verify_signature(self):
+        #Verifies with a public key from whom the data came that it was indeed 
+        #signed by their private key
+        print('verify signature')
         rsa_key = RSA.importKey(self.sender.encode()) #sender public key
         verifier = PKCS1_v1_5.new(rsa_key) 
         hash_obj = self.hash()

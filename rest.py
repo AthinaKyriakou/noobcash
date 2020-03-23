@@ -19,7 +19,7 @@ TOTAL_NODES = 0
 NODE_COUNTER = 0 
 BROAD_BUDDIES = {}	# dictionary of (ip address:port,public key) per node id
 
-btsrp_url = "http://83.212.72.137:5000" # communication details for bootstrap node
+btsrp_url = 'http://83.212.72.137:5000' # communication details for bootstrap node
 
 myNode = node.Node()
 myChain = blockchain.Blockchain()
@@ -50,8 +50,8 @@ def init_connection(total_nodes):
 # node requests to boostrap connect to the ring
 
 @app.route('/connect', methods=['GET'])
-def connect_request():
-	
+def connect_node_request():
+
 	## TODO
 	print('Node wants to connect')
 	myIP = str(request.environ['REMOTE_ADDR'])
@@ -61,32 +61,47 @@ def connect_request():
 	message = {'ip':myIP, 'port':'5000', 'public_key':myNode.wallet.public_key}
 	m = json.dumps(message)
 	headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-	response = requests.post(btsrp_url + "/receive", data = m, headers = headers)
-
-	## TODO: set ID to node if accepted in the ring
-	print(response)
 	
-	return myIP + ' tries to get iiiiiiin'
+	response = requests.post(btsrp_url + "/receive", data = m, headers = headers)
+	potentialID = int(response.text)
 
+	if potentialID > 0:
+		myNode.id = potentialID
+		return myIP + ' accepted in the riiiing!'
+	else:
+		return myIP + ' pistolii'
+	
 
 # bootstrap handles node requests to join the ring
 
 @app.route('/receive', methods=['POST'])
-def receive_node_req():
+def receive_node_request():
 	global NODE_COUNTER
 	global TOTAL_NODES
 	global BROAD_BUDDIES
-	message = request.get_json()
+	
+	receivedMsg = request.get_json()
+	senderInfo = 'http://' + receivedMsg.get('ip') + ':' + receivedMsg.get('port')
+	print(senderInfo)
+	newID = -1
+	
 	if  NODE_COUNTER < TOTAL_NODES - 1:
 		NODE_COUNTER += 1
-		BROAD_BUDDIES[NODE_COUNTER] = {'ip': message.get('ip'), 'port': message.get('port'), 'public_key': message.get('public_key')}
+		newID = NODE_COUNTER
+		BROAD_BUDDIES[NODE_COUNTER] = {'ip': receivedMsg.get('ip'), 'port': receivedMsg.get('port'), 'public_key': receivedMsg.get('public_key')}
 		print('Node ' + str(NODE_COUNTER) + ' added')
-		return 'ok', 200
 	else:
 		print('Too many nodes already ' + str(NODE_COUNTER))
 		print(BROAD_BUDDIES)
-		return 'prob', 400
-	
+
+	return str(newID), 200
+
+
+@app.route('/connect/response', methods=['POST'])
+def receive_connect_response():
+	receivedMsg = request.get_json()
+	print(receivedMsg)
+
 	
 # get all transactions in the blockchain
 
