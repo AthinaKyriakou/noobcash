@@ -72,8 +72,12 @@ class Node:
 			return None
 		
 
-	def broadcast_transaction():
+	def broadcast_transaction(trans):
 		print("broadcast_transaction")
+		url = "broadcst_trans"
+		message = trans.__dict__ #returns attributes as keys, and their values as value
+		broadcast(message,url)
+		return
 
 
 	def validate_transaction(self, t):
@@ -120,21 +124,26 @@ class Node:
 			print(f"validate transaction: {e.__class__.__name__}: {e}")
 			return 'error', None
 
-
-
-	def add_transaction_to_block():
+	def add_transaction_to_block(transaction):
 		#if enough transactions  mine
 		print("add_transaction_to_block")
+
 
 
 	def mine_block():
 		print("mine_block")
 
 
-	def broadcast_block():
+	def broadcast_block(block):
 		print("broadcast_block")
+		url = "broadcst_block"
+		message = block.__dict__
+		return
 
-		
+	
+	def validate_block(self,block):
+		print("validate_block\n")
+		return
 
 	def valid_proof(other_parameters, difficulty=MINING_DIFFICULTY):
 		print("valid_proof")

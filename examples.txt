@@ -1,0 +1,6 @@
+#check block broadcast
+curl -d '{"previousHash":1,"timestamp":2,"nonce":3,"listOfTransactions":4,"blockHash":5}' -H "Content-Type: application/json" -X POST http://localhost:5000/broadcst_block
+
+#check transaction broadcast
+curl -d '{"sender":1,"receiver":2,"amount":3,"id":4,"transaction_inputs":5,"transaction_outputs":6,"signature":7,"sender_privkey":8}' -H "Content-Type: application/json" -X POST http://localhost:5000/broadcst_trans
+

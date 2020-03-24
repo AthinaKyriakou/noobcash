@@ -18,7 +18,7 @@ CORS(app)
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
-btsrp_url = 'http://83.212.72.137:5000' # communication details for bootstrap node
+btsrp_url = 'http://192.168.2.10:5000' # communication details for bootstrap node
 myNode = node.Node()
 myChain = blockchain.Blockchain()
 
@@ -29,7 +29,7 @@ myChain = blockchain.Blockchain()
 
 # bootstrap node initializes the app
 # create genesis block and add boostrap to dict to be broadcasted
-
+# OK
 @app.route('/init/<total_nodes>', methods=['GET'])
 def init_connection(total_nodes):
 	global TOTAL_NODES
@@ -44,7 +44,7 @@ def init_connection(total_nodes):
 
 
 # node requests to boostrap connect to the ring
-
+# OK
 @app.route('/connect', methods=['GET'])
 def connect_node_request():
 	print('Node wants to connect')
@@ -55,21 +55,64 @@ def connect_node_request():
 	m = json.dumps(message)
 	headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 	response = requests.post(btsrp_url + "/receive", data = m, headers = headers)
-	potentialID = int(response.text)
+	
+	data = response.json() # dictionary containing id + chain 
+	potentialID = data.get('id')
+	current_chain = data.get('chain')
+	
 	if potentialID > 0:
 		myNode.id = potentialID
-		return myIP + ' accepted in the riiiing!'
+		return "Connection for IP: "+myIP + " established,\nOK\n",200
 	else:
-		return myIP + ' pistolii'
+		return "Conection for IP: "+myIP + " to ring refused, too many nodes\n",403
 	
+# receive broadcasted transaction
+# CHECK
+@app.route('/broadcst_trans',methods=['POST'])
+def broadcst_trans():
+	print("node broadcasted a transaction")
+	tmp = request.get_json()
+	# TODO change init parameter names of transaction to make ie easier
+	# transaction = Transaction(**transaction)
+	sender = tmp.get("sender")
+	receiver = tmp.get("receiver")
+	amount = tmp.get("amount")
+	transId = tmp.get("id")
+	transaction_inputs = tmp.get("transaction_inputs")
+	transaction_outputs = tmp.get("transaction_outputs")
+	signature = tmp.get("signature")
+	sender_privkey = tmp.get("sender_privkey")
+	trans = transaction.Transaction(sender,sender_privkey,receiver,
+		amount,transaction_inputs,transaction_outputs,transId,signature)
+	if (myNode.validate_transaction(trans)):
+		print("Node %s: -Transaction from %s to %s well received\n"%(myNode.id,sender,receiver))
+	else:
+		print("Error: Illegal Transaction\n")
+	return "Broadcast transaction OK\n",200
+
+# receive broadcasted block
+# CHECK
+@app.route('/broadcst_block', methods = ['POST'])
+def broadcst_block():
+	tmp = request.get_json()
+	b = block.Block()
+	b.previousHash = tmp.get('previousHash')
+	b.timestamp = tmp.get('timestamp')
+	b.nonce = tmp.get('nonce')
+	b.listOfTransactions = tmp.get('listOfTransactions')
+	b.blockHash = tmp.get('hash')
+	if (myNode.validate_block(b)):
+		print("Node %s: -Block validated\n"%myNode.id)
+	else:
+		return "Error: Block rejected\n", 403
+	return "Block broadcast OK\n",200
 
 # bootstrap handles node requests to join the ring
-
+# OK
 @app.route('/receive', methods=['POST'])
 def receive_node_request():
 	global NODE_COUNTER
 	global TOTAL_NODES
-	global BROAD_BUDDIES
 	receivedMsg = request.get_json()
 	senderInfo = 'http://' + receivedMsg.get('ip') + ':' + receivedMsg.get('port')
 	print(senderInfo)
@@ -81,8 +124,17 @@ def receive_node_request():
 	else:
 		print('Too many nodes already ' + str(NODE_COUNTER))
 		print(myNode.ring)
+		return "Too many nodes already\n",403 #FORBIDDEN
 
-	return str(newID), 200
+	# successful addition to ring
+	new_data = {} # dictionary with id + current blockchain
+	new_data['id'] = newID
+	blocks = [] # list with blocks as dictionaries
+	for block in myChain.block_list:
+		blocks.append(block.__dict__)
+	new_data['chain'] = blocks
+	message = json.dumps(new_data)
+	return message, 200 # OK
 
 	
 # get all transactions in the blockchain
