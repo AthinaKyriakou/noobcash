@@ -66,52 +66,6 @@ def connect_node_request():
 	else:
 		return "Conection for IP: "+myIP + " to ring refused, too many nodes\n",403
 	
-# receive broadcasted transaction
-# CHECK
-@app.route('/broadcst_trans',methods=['POST'])
-def broadcst_trans():
-	print("node broadcasted a transaction")
-	tmp = request.get_json()
-	# TODO change init parameter names of transaction to make ie easier
-	# transaction = Transaction(**transaction)
-	sender = tmp.get("sender")
-	receiver = tmp.get("receiver")
-	amount = tmp.get("amount")
-	transId = tmp.get("id")
-	transaction_inputs = tmp.get("transaction_inputs")
-	transaction_outputs = tmp.get("transaction_outputs")
-	signature = tmp.get("signature")
-	sender_privkey = tmp.get("sender_privkey")
-	trans = transaction.Transaction(sender,sender_privkey,receiver,
-		amount,transaction_inputs,transaction_outputs,transId,signature)
-
-	code, t = myNode.validate_transaction(trans) # added or error
-	if (code =='added'):
-		print("Node %s: -Transaction from %s to %s well received\n"%(myNode.id,sender,receiver))
-
-		# add transaction to block
-		# myNode.add_transaction_to_block(trans)
-	else:
-		# print("Error: Illegal Transaction\n")
-		return "Error: Illegal Transaction\n",403
-	return "Broadcast transaction OK\n",200
-
-# receive broadcasted block
-# CHECK
-@app.route('/broadcst_block', methods = ['POST'])
-def broadcst_block():
-	tmp = request.get_json()
-	b = block.Block()
-	b.previousHash = tmp.get('previousHash')
-	b.timestamp = tmp.get('timestamp')
-	b.nonce = tmp.get('nonce')
-	b.listOfTransactions = tmp.get('listOfTransactions')
-	b.blockHash = tmp.get('hash')
-	if (myNode.validate_block(b)):
-		print("Node %s: -Block validated\n"%myNode.id)
-	else:
-		return "Error: Block rejected\n", 403
-	return "Block broadcast OK\n",200
 
 # bootstrap handles node requests to join the ring
 # OK
@@ -142,22 +96,73 @@ def receive_node_request():
 	message = json.dumps(new_data)
 	return message, 200 # OK
 
-	
+# receive broadcasted transaction
+# CHECK with validate functionality
+@app.route('/broadcst_trans',methods=['POST'])
+def broadcst_trans():
+	print("node broadcasted a transaction")
+	tmp = request.get_json()
+	# TODO change init parameter names of transaction to make ie easier
+	# transaction = Transaction(**transaction)
+	sender = tmp.get("sender")
+	receiver = tmp.get("receiver")
+	amount = tmp.get("amount")
+	transId = tmp.get("id")
+	transaction_inputs = tmp.get("transaction_inputs")
+	transaction_outputs = tmp.get("transaction_outputs")
+	signature = tmp.get("signature")
+	sender_privkey = tmp.get("sender_privkey")
+	trans = transaction.Transaction(sender,sender_privkey,receiver,
+		amount,transaction_inputs,transaction_outputs,transId,signature)
+
+	code, t = myNode.validate_transaction(trans) # added or error
+	if (code =='added'):
+		print("Node %s: -Transaction from %s to %s well received\n"%(myNode.id,sender,receiver))
+
+		# add transaction to block
+		myNode.add_transaction_to_block(trans)
+	else:
+		return "Error: Illegal Transaction\n",403
+	return "Broadcast transaction OK\n",200
+
+# receive broadcasted block
+# CHECK with validate functionality
+@app.route('/broadcst_block', methods = ['POST'])
+def broadcst_block():
+	tmp = request.get_json()
+	b = block.Block()
+	b.previousHash = tmp.get('previousHash')
+	b.timestamp = tmp.get('timestamp')
+	b.nonce = tmp.get('nonce')
+	b.listOfTransactions = tmp.get('listOfTransactions')
+	b.blockHash = tmp.get('hash')
+	if (myNode.validate_block(b)):
+		print("Node %s: -Block validated\n"%myNode.id)
+	else:
+		return "Error: Block rejected\n", 403
+	return "Block broadcast OK\n",200
+
+# create new transaction
+# FILLME
+@app.route('/transaction/new',methods=['POST'])
+def transaction_new():
+	return
+
 # get all transactions in the blockchain
 
 @app.route('/transactions/get', methods=['GET'])
 def get_transactions():
-    transactions = blockchain.transactions
-    response = {'transactions': transactions}
-    return jsonify(response), 200
+	transactions = blockchain.transactions
+	response = {'transactions': transactions}
+	return jsonify(response), 200
 
 
 # run it once for every node
 
 if __name__ == '__main__':
-    from argparse import ArgumentParser
-    parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
-    args = parser.parse_args()
-    port = args.port
-    app.run(host='0.0.0.0', port=port)
+	from argparse import ArgumentParser
+	parser = ArgumentParser()
+	parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
+	args = parser.parse_args()
+	port = args.port
+	app.run(host='0.0.0.0', port=port)
