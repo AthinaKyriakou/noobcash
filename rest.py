@@ -36,10 +36,12 @@ def init_connection(total_nodes):
 	global BROAD_BUDDIES
 	TOTAL_NODES = int(total_nodes)
 	print('App starting for ' + str(TOTAL_NODES) + ' nodes')
-	myChain.create_blockchain()
+	myChain.create_blockchain() # also creates genesis block
+	myNode.create_genesis_transaction()
 	myNode.id = 0
 	myNode.register_node_to_ring(myNode.id, str(request.environ['REMOTE_ADDR']), '5000', myNode.wallet.public_key)	##TODO: add the balance
 	print('Bootstrap node created: ID = ' + str(myNode.id) + ', blockchain with ' + str(len(myChain.block_list)) + ' block')
+
 	return render_template('app_start.html')
 
 
@@ -101,20 +103,8 @@ def receive_node_request():
 @app.route('/broadcst_trans',methods=['POST'])
 def broadcst_trans():
 	print("node broadcasted a transaction")
-	tmp = request.get_json()
-	# TODO change init parameter names of transaction to make ie easier
-	# transaction = Transaction(**transaction)
-	sender = tmp.get("sender")
-	receiver = tmp.get("receiver")
-	amount = tmp.get("amount")
-	transId = tmp.get("id")
-	transaction_inputs = tmp.get("transaction_inputs")
-	transaction_outputs = tmp.get("transaction_outputs")
-	signature = tmp.get("signature")
-	sender_privkey = tmp.get("sender_privkey")
-	trans = transaction.Transaction(sender,sender_privkey,receiver,
-		amount,transaction_inputs,transaction_outputs,transId,signature)
-
+	data = request.get_json()
+	trans = transaction.Transaction(**data)
 	code, t = myNode.validate_transaction(trans) # added or error
 	if (code =='added'):
 		print("Node %s: -Transaction from %s to %s well received\n"%(myNode.id,sender,receiver))
@@ -129,13 +119,13 @@ def broadcst_trans():
 # CHECK with validate functionality
 @app.route('/broadcst_block', methods = ['POST'])
 def broadcst_block():
-	tmp = request.get_json()
+	data = request.get_json()
 	b = block.Block()
-	b.previousHash = tmp.get('previousHash')
-	b.timestamp = tmp.get('timestamp')
-	b.nonce = tmp.get('nonce')
-	b.listOfTransactions = tmp.get('listOfTransactions')
-	b.blockHash = tmp.get('hash')
+	b.previousHash = data.get('previousHash')
+	b.timestamp = data.get('timestamp')
+	b.nonce = data.get('nonce')
+	b.listOfTransactions = data.get('listOfTransactions')
+	b.blockHash = data.get('hash')
 	if (myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
 	else:
@@ -146,6 +136,9 @@ def broadcst_block():
 # FILLME
 @app.route('/transaction/new',methods=['POST'])
 def transaction_new():
+	data = request.get_json()
+	trans = transaction.Transaction(**data)
+
 	return
 
 # get all transactions in the blockchain
