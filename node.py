@@ -208,6 +208,11 @@ class Node:
 		print("valid_proof")
 		return nonce[:difficulty] == '0'*difficulty
 
+	def validate_chain(self):
+		for b in self.valid_chain.block_list:
+			if ( not self.validate_block(b)):
+				return False
+		return True
 
 	#consensus functions
 	def valid_chain(self, chain):
