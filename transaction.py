@@ -16,14 +16,14 @@ from flask import Flask, jsonify, request, render_template
 
 class Transaction:
 
-    def __init__(self, sender, sender_privkey, recipient, value, input, transaction_outputs=[], id=None, signature=None):
+    def __init__(self, sender, sender_privkey, receiver, amount, transaction_inputs, transaction_outputs=[], id=None, signature=None):
         ##set
         print('transaction_init')
         self.sender = sender #public key του wallet από το οποίο προέρχονται τα χρήματα
-        self.receiver = recipient #public key του wallet στο οποίο θα καταλήξουν τα χρήματα
-        self.amount = value #: το ποσό που θα μεταφερθεί
+        self.receiver = receiver #public key του wallet στο οποίο θα καταλήξουν τα χρήματα
+        self.amount = amount #: το ποσό που θα μεταφερθεί
         self.id = id #: το hash του transaction
-        self.transaction_inputs = input #: λίστα από Transaction Input . previousOutputId
+        self.transaction_inputs = transaction_inputs #: λίστα από Transaction Input . previousOutputId
         self.transaction_outputs = transaction_outputs #: λίστα από Transaction Output 
         self.signature = signature		
         self.sender_privkey = sender_privkey
