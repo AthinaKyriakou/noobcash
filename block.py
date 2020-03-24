@@ -16,5 +16,3 @@ class Block:
 		hash_data = OrderedDict([('prev':self.previousHash),('tmsp':self.timestamp), ('nonce': self.nonce)])
 		tmp = json.dumps(hash_data) 
 		self.hash = SHA384.new(tmp.encode())
-
-

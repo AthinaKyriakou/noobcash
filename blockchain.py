@@ -21,7 +21,8 @@ class Blockchain:
 		print('blockchain_init')
 		self.block_list = []
 		
-	#create bootstrap_node and genesis block
+	# create bootstrap_node and 
+	# genesis block(previous_hash = 1, nonce = 0)
 	def create_blockchain(self):
 		genesis = block.Block()
 		data = {}

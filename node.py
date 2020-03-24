@@ -16,13 +16,13 @@ class Node:
 		self.id=-1 # bootstrap will send the node's final ID
 		self.valid_chain=None
 		self.current_block=None
-		self.ring={} #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
+		self.ring={} #here we store information for every node, as its id, its address (ip:port) its public key and its balance
 
 
-	def broadcast(message,url):
+	def broadcast(message, url):
 		m = json.dump(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-		for other in self.ring:
+		for other in self.ring:	## TODO ring -> dict
 			requests.post(other+"/"+url, data = m, headers = headers)
 		return
 
@@ -32,7 +32,7 @@ class Node:
 	# def create_wallet():
 	# 	#create a wallet for this node, with a public key and a private key
 		# print("create_wallet")
-		
+
 	
 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
@@ -150,13 +150,23 @@ class Node:
 			print(f"validate transaction: {e.__class__.__name__}: {e}")
 			return 'error', None
 
+
 	# don't check CAPACITY here!
 	def add_transaction_to_block(self,transaction):
-		#if enough transactions  mine
+		global CAPACITY
 		print("add_transaction_to_block")
 		current_block = self.valid_chain.block_list[-1]
 		current_block.listOfTransactions.append(transaction)
-		return True
+		# if block if full, mine
+		if (len(current_block.listOfTransactions) == CAPACITY):
+			mine_block()
+		#return True
+
+
+	# when the block is full, al of the users/nodes are miners -> mining
+	# the one who finds the right nonce -> broadcast the validated block
+	def mine_block():
+		print("mine_block")
 
 
 	def broadcast_block(self,block):
@@ -164,10 +174,6 @@ class Node:
 		url = "broadcst_block"
 		message = block.__dict__
 		return
-
-
-	def mine_block():
-		print("mine_block")
 
 	
 	def validate_block(self,block):
@@ -179,7 +185,7 @@ class Node:
 
 
 
-	#concencus functions
+	#consensus functions
 
 	def valid_chain(self, chain):
 		#check for the longer chain accroose all nodes

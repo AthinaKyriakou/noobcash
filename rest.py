@@ -18,7 +18,8 @@ CORS(app)
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
-btsrp_url = 'http://192.168.2.10:5000' # communication details for bootstrap node
+btsrp_url = 'http://192.168.1.2:5000' # communication details for bootstrap node
+
 myNode = node.Node()
 myChain = blockchain.Blockchain()
 
@@ -33,7 +34,6 @@ myChain = blockchain.Blockchain()
 @app.route('/init/<total_nodes>', methods=['GET'])
 def init_connection(total_nodes):
 	global TOTAL_NODES
-	global BROAD_BUDDIES
 	TOTAL_NODES = int(total_nodes)
 	print('App starting for ' + str(TOTAL_NODES) + ' nodes')
 	myChain.create_blockchain() # also creates genesis block
@@ -64,9 +64,9 @@ def connect_node_request():
 	
 	if potentialID > 0:
 		myNode.id = potentialID
-		return "Connection for IP: "+myIP + " established,\nOK\n",200
+		return "Connection for IP: " + myIP + " established,\nOK\n",200
 	else:
-		return "Conection for IP: "+myIP + " to ring refused, too many nodes\n",403
+		return "Conection for IP: " + myIP + " to ring refused, too many nodes\n",403
 	
 
 # bootstrap handles node requests to join the ring
@@ -79,24 +79,22 @@ def receive_node_request():
 	senderInfo = 'http://' + receivedMsg.get('ip') + ':' + receivedMsg.get('port')
 	print(senderInfo)
 	newID = -1
-	if  NODE_COUNTER < TOTAL_NODES - 1: #TODO: check with length of the ring
+	if  NODE_COUNTER < TOTAL_NODES - 1:
 		NODE_COUNTER += 1
 		newID = NODE_COUNTER
 		myNode.register_node_to_ring(newID, receivedMsg.get('ip'), receivedMsg.get('port'), receivedMsg.get('public_key'))	##TODO: add the balance
+		new_data = {}
+		new_data['id'] = newID
+		blocks = [] 
+		for block in myChain.block_list:
+			blocks.append(block.__dict__)
+		new_data['chain'] = blocks
+		message = json.dumps(new_data)
+		return message, 200 # OK
 	else:
-		print('Too many nodes already ' + str(NODE_COUNTER))
 		print(myNode.ring)
 		return "Too many nodes already\n",403 #FORBIDDEN
 
-	# successful addition to ring
-	new_data = {} # dictionary with id + current blockchain
-	new_data['id'] = newID
-	blocks = [] # list with blocks as dictionaries
-	for block in myChain.block_list:
-		blocks.append(block.__dict__)
-	new_data['chain'] = blocks
-	message = json.dumps(new_data)
-	return message, 200 # OK
 
 # receive broadcasted transaction
 # CHECK with validate functionality
@@ -110,10 +108,12 @@ def broadcst_trans():
 		print("Node %s: -Transaction from %s to %s well received\n"%(myNode.id,sender,receiver))
 
 		# add transaction to block
+		# TODO: get different response if just add or if also mined
 		myNode.add_transaction_to_block(trans)
 	else:
 		return "Error: Illegal Transaction\n",403
 	return "Broadcast transaction OK\n",200
+
 
 # receive broadcasted block
 # CHECK with validate functionality
@@ -132,6 +132,7 @@ def broadcst_block():
 		return "Error: Block rejected\n", 403
 	return "Block broadcast OK\n",200
 
+
 # create new transaction
 # FILLME
 @app.route('/transaction/new',methods=['POST'])
@@ -141,8 +142,8 @@ def transaction_new():
 
 	return
 
-# get all transactions in the blockchain
 
+# get all transactions in the blockchain
 @app.route('/transactions/get', methods=['GET'])
 def get_transactions():
 	transactions = blockchain.transactions
@@ -151,7 +152,6 @@ def get_transactions():
 
 
 # run it once for every node
-
 if __name__ == '__main__':
 	from argparse import ArgumentParser
 	parser = ArgumentParser()
