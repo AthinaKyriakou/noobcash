@@ -24,10 +24,8 @@ class Blockchain:
 	# create bootstrap_node and 
 	# genesis block(previous_hash = 1, nonce = 0)
 	def create_blockchain(self):
-		genesis = block.Block()
-		data = {}
-		data['previousHash']=1
-		data['nonce']=0
+		genesis = block.Block(previousHash=1)
+		genesis.nonce=0
 		self.block_list.append(genesis)
 		#genesis_tans=transaction() # add parameters for init
 

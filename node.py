@@ -60,10 +60,10 @@ class Node:
 		data['id']=0
 		data['signature']=None
 		data['sender_privkey']=self.wallet.private_key
-
-		# add transaction to block
+		data['amount']=amount
 		trans = transaction.Transaction(**data)
-		self.valid_chain[-1].listOfTransactions.append(trans)
+		# add transaction to block
+		self.valid_chain.block_list[-1].listOfTransactions.append(trans)
 
 		# add genesis UTXO to wallet
 		init_utxos={}
