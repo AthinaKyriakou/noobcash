@@ -44,7 +44,7 @@ class Node:
 		else:
 			print('cannot register node')
 
-
+	# TODO: sender is self(node), make changes
 	def create_transaction(sender_wallet, receiver_public, amount):
 		#remember to broadcast it
 		print("create_transaction")
@@ -72,7 +72,7 @@ class Node:
 			return None
 		
 
-	def broadcast_transaction(trans):
+	def broadcast_transaction(self,trans):
 		print("broadcast_transaction")
 		url = "broadcst_trans"
 		message = trans.__dict__ #returns attributes as keys, and their values as value
@@ -124,21 +124,24 @@ class Node:
 			print(f"validate transaction: {e.__class__.__name__}: {e}")
 			return 'error', None
 
-	def add_transaction_to_block(transaction):
+	# don't check CAPACITY here!
+	def add_transaction_to_block(self,transaction):
 		#if enough transactions  mine
 		print("add_transaction_to_block")
+		current_block = self.valid_chain.block_list[-1]
+		current_block.listOfTransactions.append(transaction)
+		return True
 
 
-
-	def mine_block():
-		print("mine_block")
-
-
-	def broadcast_block(block):
+	def broadcast_block(self,block):
 		print("broadcast_block")
 		url = "broadcst_block"
 		message = block.__dict__
 		return
+
+
+	def mine_block():
+		print("mine_block")
 
 	
 	def validate_block(self,block):
