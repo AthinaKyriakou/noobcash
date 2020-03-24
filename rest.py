@@ -84,10 +84,16 @@ def broadcst_trans():
 	sender_privkey = tmp.get("sender_privkey")
 	trans = transaction.Transaction(sender,sender_privkey,receiver,
 		amount,transaction_inputs,transaction_outputs,transId,signature)
-	if (myNode.validate_transaction(trans)):
+
+	code, t = myNode.validate_transaction(trans) # added or error
+	if (code =='added'):
 		print("Node %s: -Transaction from %s to %s well received\n"%(myNode.id,sender,receiver))
+
+		# add transaction to block
+		# myNode.add_transaction_to_block(trans)
 	else:
-		print("Error: Illegal Transaction\n")
+		# print("Error: Illegal Transaction\n")
+		return "Error: Illegal Transaction\n",403
 	return "Broadcast transaction OK\n",200
 
 # receive broadcasted block
