@@ -13,10 +13,10 @@ class Node:
 	def __init__(self,NUM_OF_NODES=None):
 		print('node_init')
 		self.wallet=wallet.Wallet()
-		self.id=-1 # bootstrap will send the node's final ID
-		self.valid_chain=None
-		self.current_block=None
-		self.ring={} #here we store information for every node, as its id, its address (ip:port) its public key and its balance
+		self.id = -1 # bootstrap will send the node's final ID
+		self.valid_chain = None
+		self.current_block = None # where received transactions are collected
+		self.ring = {} #here we store information for every node, as its id, its address (ip:port) its public key and its balance
 
 
 	def broadcast(message, url):
