@@ -12,10 +12,10 @@ init_count = -1 #initial id count, accept ids <= 10
 class Node:
 	def __init__(self,NUM_OF_NODES=None):
 		print('node_init')
-		self.NBC=100;
 		self.wallet=wallet.Wallet()
 		self.id=-1 # bootstrap will send the node's final ID
 		self.valid_chain=None
+		self.current_block=None
 		self.ring={} #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 
 
@@ -44,7 +44,33 @@ class Node:
 		else:
 			print('cannot register node')
 
-	# TODO: sender is self(node), make changes
+
+	def create_genesis_transaction(self,num_of_nodes):
+		data={}
+		sender=self.wallet.public_key
+		amount=100*num_of_nodes
+
+		# create genesis transaction
+		data['receiver']=data['sender']=sender
+		data['transaction_inputs']=[]
+		data['transaction_outputs']=[]
+		outpt_sender = outpt_receiver = {"id":0,"to_who":sender,"amount":amount}
+		data['transaction_outputs'].append(outpt_sender)
+		data['transaction_outputs'].append(outpt_receiver)
+		data['id']=0
+		data['signature']=None
+		data['sender_privkey']=self.wallet.private_key
+
+		# add transaction to block
+		trans = transaction.Transaction(**data)
+		self.valid_chain[-1].listOfTransactions.append(trans)
+
+		# add genesis UTXO to wallet
+		init_utxos={}
+		init_utxos[sender]={"id":0,"amount":amount}
+		self.wallet.utxos=init_utxos
+		
+
 	def create_transaction(sender_wallet, receiver_public, amount):
 		#remember to broadcast it
 		print("create_transaction")
@@ -104,7 +130,7 @@ class Node:
 				if not found:
 					raise Exception('missing transaction inputs')
 			temp = []
-			if (val_amount > t.amount):
+			if (val_amount >= t.amount):
 				temp.append({'id': t.id, 'to_who': t.sender, 'amount': val_amount - t.amount })
 				temp.append({'id': t.id, 'to_who': t.sender, 'amount':  t.amount })
 			if (temp != t.transaction_outputs):
