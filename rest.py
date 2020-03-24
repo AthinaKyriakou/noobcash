@@ -100,20 +100,20 @@ def receive_node_request():
 # receive broadcasted transaction
 # CHECK with validate functionality
 @app.route('/receive_trans',methods=['POST'])
-def broadcst_trans():
-	print("node broadcasted a transaction")
+def receive_trans():
+	print("node received a transaction")
 	data = request.get_json()
 	trans = transaction.Transaction(**data)
 	code, t = myNode.validate_transaction(trans) # added or error
 	if (code =='added'):
-		print("Node %s: -Transaction from %s to %s well received\n"%(myNode.id,sender,receiver))
-
-		# add transaction to block
-		# TODO: get different response if just add or if also mined
-		# myNode.add_transaction_to_block(trans)
+		print("Node %s: -Transaction from %s to %s is valid\n"%(myNode.id,sender,receiver))
+		isBlockMined = myNode.add_transaction_to_block(trans)
+		if (isBlockMined):
+			return "Valid transaction added to block, block is mined OK\n",200
+		else:
+			return "Valid transaction added to block OK\n",200
 	else:
 		return "Error: Illegal Transaction\n",403
-	return "Broadcast transaction OK\n",200
 
 
 # receive broadcasted block
