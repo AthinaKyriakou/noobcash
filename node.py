@@ -17,10 +17,10 @@ class Node:
 		self.ring={} #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 
 
-	def broadcast(message,url):
+	def broadcast(message, url):
 		m = json.dump(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-		for other in self.ring:
+		for other in self.ring:	## TODO ring -> dict
 			requests.post(other+"/"+url, data = m, headers = headers)
 		return
 
@@ -30,7 +30,7 @@ class Node:
 	# def create_wallet():
 	# 	#create a wallet for this node, with a public key and a private key
 		# print("create_wallet")
-		
+
 	
 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
@@ -52,9 +52,9 @@ class Node:
 		print("broadcast_transaction")
 
 
-	def validdate_transaction():
+	def validate_transaction():
 		#use of signature and NBCs balance
-		print("validdate_transaction")
+		print("validate_transaction")
 
 	def add_transaction_to_block():
 		#if enough transactions  mine
@@ -75,7 +75,7 @@ class Node:
 
 
 
-	#concencus functions
+	#consensus functions
 
 	def valid_chain(self, chain):
 		#check for the longer chain accroose all nodes

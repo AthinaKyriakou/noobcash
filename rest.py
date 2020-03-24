@@ -18,7 +18,7 @@ CORS(app)
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
-btsrp_url = 'http://83.212.72.137:5000' # communication details for bootstrap node
+btsrp_url = 'http://192.168.1.2:5000' # communication details for bootstrap node
 myNode = node.Node()
 myChain = blockchain.Blockchain()
 
@@ -58,9 +58,9 @@ def connect_node_request():
 	potentialID = int(response.text)
 	if potentialID > 0:
 		myNode.id = potentialID
-		return myIP + ' accepted in the riiiing!'
+		return myIP + ' accepted in the riiiing!\n'
 	else:
-		return myIP + ' pistolii'
+		return myIP + ' pistolii\n'
 	
 
 # bootstrap handles node requests to join the ring
@@ -79,9 +79,8 @@ def receive_node_request():
 		newID = NODE_COUNTER
 		myNode.register_node_to_ring(newID, receivedMsg.get('ip'), receivedMsg.get('port'), receivedMsg.get('public_key'))	##TODO: add the balance
 	else:
-		print('Too many nodes already ' + str(NODE_COUNTER))
+		print('Too many nodes already ' + str(NODE_COUNTER + 1))
 		print(myNode.ring)
-
 	return str(newID), 200
 
 	
