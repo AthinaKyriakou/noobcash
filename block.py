@@ -5,12 +5,13 @@ from Crypto.Hash import SHA384
 import json
 
 class Block:
-	def __init__(self, previousHash=None):
+	def __init__(self, index = -1, previousHash = None):
 		##set
 		print('block_init')
-		self.previousHash=previousHash
-		self.timestamp=datetime.datetime.now().timestamp()
-		self.nonce=None
+		self.index = index
+		self.previousHash = previousHash
+		self.timestamp = datetime.datetime.now().timestamp()
+		self.nonce = 0
 		self.listOfTransactions=[]
 		self.hash = None
 

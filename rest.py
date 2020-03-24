@@ -21,7 +21,6 @@ NODE_COUNTER = 0
 btsrp_url = 'http://192.168.1.2:5000' # communication details for bootstrap node
 
 myNode = node.Node()
-myChain = blockchain.Blockchain()
 
 #.......................................................................................
 # REST services and functions
@@ -36,12 +35,11 @@ def init_connection(total_nodes):
 	global TOTAL_NODES
 	TOTAL_NODES = int(total_nodes)
 	print('App starting for ' + str(TOTAL_NODES) + ' nodes')
-	myChain.create_blockchain() # also creates genesis block
-	myNode.valid_chain=myChain
+	myNode.valid_chain.create_blockchain() # also creates genesis block
 	myNode.create_genesis_transaction(TOTAL_NODES)
 	myNode.id = 0
 	myNode.register_node_to_ring(myNode.id, str(request.environ['REMOTE_ADDR']), '5000', myNode.wallet.public_key)	##TODO: add the balance
-	print('Bootstrap node created: ID = ' + str(myNode.id) + ', blockchain with ' + str(len(myChain.block_list)) + ' block')
+	print('Bootstrap node created: ID = ' + str(myNode.id) + ', blockchain with ' + str(len(myNode.valid_chain.block_list)) + ' block')
 
 	return render_template('app_start.html')
 
@@ -87,7 +85,7 @@ def receive_node_request():
 		new_data = {}
 		new_data['id'] = newID
 		blocks = [] 
-		for block in myChain.block_list:
+		for block in myNode.valid_chain.block_list:
 			blocks.append(block.__dict__)
 		new_data['chain'] = blocks
 		message = json.dumps(new_data)
@@ -119,7 +117,7 @@ def receive_trans():
 # receive broadcasted block
 # CHECK with validate functionality
 @app.route('/receive_block', methods = ['POST'])
-def broadcst_block():
+def receive_block():
 	data = request.get_json()
 	b = block.Block()
 	b.previousHash = data.get('previousHash')
@@ -140,7 +138,6 @@ def broadcst_block():
 def transaction_new():
 	data = request.get_json()
 	trans = transaction.Transaction(**data)
-
 	return
 
 

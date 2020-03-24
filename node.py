@@ -1,9 +1,11 @@
 import block
+import blockchain
 import wallet
 import json
 import requests
 import transaction
 import copy
+from Crypto.Hash import SHA256
 
 MINING_DIFFICULTY = 5
 CAPACITY = 5 # run capacity=1, 5, 10
@@ -12,9 +14,9 @@ init_count = -1 #initial id count, accept ids <= 10
 class Node:
 	def __init__(self,NUM_OF_NODES=None):
 		print('node_init')
-		self.wallet=wallet.Wallet()
+		self.wallet = wallet.Wallet()
 		self.id = -1 # bootstrap will send the node's final ID
-		self.valid_chain = None
+		self.valid_chain = blockchain.Blockchain()
 		self.current_block = None # where received transactions are collected
 		self.ring = {} #here we store information for every node, as its id, its address (ip:port) its public key and its balance
 
@@ -22,12 +24,11 @@ class Node:
 	def broadcast(message, url):
 		m = json.dump(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-		for other in self.ring:	## TODO ring -> dict
-			requests.post(other+"/"+url, data = m, headers = headers)
+		for nodeID in self.ring:
+			nodeInfo = self.ring[nodeInfo]
+			requests.post(nodeInfo[ip]+"/"+url, data = m, headers = headers)
 		return
 
-	def create_new_block():
-		print("create_block")
 
 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
@@ -152,38 +153,65 @@ class Node:
 		global CAPACITY
 		print("add_transaction_to_block")
 		self.current_block.listOfTransactions.append(transaction)
-		if (len(self.current_block.listOfTransactions) == CAPACITY):
-			mine_block()
+		if len(self.current_block.listOfTransactions) == CAPACITY:
+			mine_block(self.current_block)
 			return True
 		else:
 			return False
 
 
-	# when the block is full, al of the users/nodes are miners -> mining
-	# the one who finds the right nonce -> broadcast the validated block
-	def mine_block():
+	def mining_hash(self, block):
+		tmp = f"{block.index}{block.previousHash}{block.timestamp}{block.nonce}{block.listOfTransactions}"
+		tmpEncode = tmp.encode()
+		return SHA256.new(tmpEncode).hexdigest() 
+
+
+	# mine when current block is full
+	# the one who finds the right nonce broadcast the block
+	def mine_block(self, block, difficulty = MINING_DIFFICULTY):
 		print("mine_block")
+		self.nonce = 0
+		guess = mining_hash(block)
+		while guess[:difficulty]!=('0'*difficulty):
+			self.nonce += 1
+			guess = mining_hash(block)
+		block.hash = guess
+		broadcast_block(block)
 
 
-	def broadcast_block(self,block):
+    # add block to node's valid chain
+    # and return a new current one
+	def create_new_block(self, block):	 ##TODO: check if we should do it also for genesis
+		print("create_block")
+		self.valid_chain.add_block(block)
+		idx = block.index + 1
+		prevHash = block.hash
+		self.current_block = block.Block(index = idx, previousHash = prevHash)
+
+
+	# broadcast current block, added to chain and initialize new one
+	def broadcast_block(self, block):
 		print("broadcast_block")
 		url = "receive_block"
 		message = block.__dict__
+		broadcast(message, url)
+		create_new_block(block)
 		return
 
 	
-	def validate_block(self,block):
+	def validate_block(self, block):
 		print("validate_block\n")
 		return block.previousHash == self.valid_chain.block_list[-1].hash
+
 
 	def valid_proof(nonce, difficulty=MINING_DIFFICULTY):
 		print("valid_proof")
 		return nonce[:difficulty] == '0'*difficulty
 
-	#consensus functions
 
+	#consensus functions
 	def valid_chain(self, chain):
-		#check for the longer chain accroose all nodes
+		#check for the longer chain across all nodes
 		print("valid_chain")
 
 	def resolve_conflicts(self):

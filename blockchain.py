@@ -24,8 +24,7 @@ class Blockchain:
 	# create bootstrap_node and 
 	# genesis block(previous_hash = 1, nonce = 0)
 	def create_blockchain(self):
-		genesis = block.Block(previousHash=1)
-		genesis.nonce=0
+		genesis = block.Block(index = 0, previousHash = 1)
 		genesis.myHash()
 		self.block_list.append(genesis)
 		return
