@@ -21,10 +21,10 @@ class Blockchain:
 		print('blockchain_init')
 		self.block_list = []
 		
-	#create bootstrap_node and genesis block
+	# create bootstrap_node and 
+	# genesis block(previous_hash = 1, nonce = 0)
 	def create_blockchain(self):
-		#TODO: initial values for genesis block
-		genesis = block.Block()
+		genesis = block.Block(1,0)	
 		self.block_list.append(genesis)
 		#genesis_tans=transaction() # add parameters for init
 

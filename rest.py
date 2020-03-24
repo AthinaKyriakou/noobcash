@@ -77,20 +77,19 @@ def receive_node_request():
 	senderInfo = 'http://' + receivedMsg.get('ip') + ':' + receivedMsg.get('port')
 	print(senderInfo)
 	newID = -1
-	if  NODE_COUNTER < TOTAL_NODES - 1: #TODO: check with length of the ring
+	if  NODE_COUNTER < TOTAL_NODES - 1:
 		NODE_COUNTER += 1
 		newID = NODE_COUNTER
 		myNode.register_node_to_ring(newID, receivedMsg.get('ip'), receivedMsg.get('port'), receivedMsg.get('public_key'))	##TODO: add the balance
-		new_data = {} # dictionary with id + current blockchain
+		new_data = {}
 		new_data['id'] = newID
-		blocks = [] # list with blocks as dictionaries
+		blocks = [] 
 		for block in myChain.block_list:
 			blocks.append(block.__dict__)
 		new_data['chain'] = blocks
 		message = json.dumps(new_data)
 		return message, 200 # OK
 	else:
-		print('Too many nodes already ' + str(NODE_COUNTER + 1))
 		print(myNode.ring)
 		return "Too many nodes already\n",403 #FORBIDDEN
 
@@ -119,6 +118,7 @@ def broadcst_trans():
 		print("Node %s: -Transaction from %s to %s well received\n"%(myNode.id,sender,receiver))
 
 		# add transaction to block
+		# TODO: get different response if just add or if also mined
 		myNode.add_transaction_to_block(trans)
 	else:
 		return "Error: Illegal Transaction\n",403

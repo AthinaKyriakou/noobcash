@@ -3,8 +3,7 @@ import datetime;
 from collections import OrderedDict
 
 class Block:
-	#def __init__(self, previousHash, nonce):	# to be used once implemented
-	def __init__(self):
+	def __init__(self, previousHash, nonce):	# to be used once implemented
 		##set
 		print('block_init')
 		#self.previousHash=previousHash

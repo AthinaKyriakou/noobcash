@@ -12,11 +12,11 @@ init_count = -1 #initial id count, accept ids <= 10
 class Node:
 	def __init__(self,NUM_OF_NODES=None):
 		print('node_init')
-		self.NBC=100;
-		self.wallet=wallet.Wallet()
-		self.id=-1 # bootstrap will send the node's final ID
-		self.valid_chain=None
-		self.ring={} #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
+		self.NBC = 100;
+		self.wallet = wallet.Wallet()
+		self.id = -1 # bootstrap will send the node's final ID
+		self.valid_chain = None
+		self.ring = {} #here we store information for every node, as its id, its address (ip:port) its public key and its balance 
 
 
 	def broadcast(message, url):
@@ -124,13 +124,23 @@ class Node:
 			print(f"validate transaction: {e.__class__.__name__}: {e}")
 			return 'error', None
 
+
 	# don't check CAPACITY here!
 	def add_transaction_to_block(self,transaction):
-		#if enough transactions  mine
+		global CAPACITY
 		print("add_transaction_to_block")
 		current_block = self.valid_chain.block_list[-1]
 		current_block.listOfTransactions.append(transaction)
-		return True
+		# if block if full, mine
+		if (len(current_block.listOfTransactions) == CAPACITY):
+			mine_block()
+		#return True
+
+
+	# when the block is full, al of the users/nodes are miners -> mining
+	# the one who finds the right nonce -> broadcast the validated block
+	def mine_block():
+		print("mine_block")
 
 
 	def broadcast_block(self,block):
@@ -138,10 +148,6 @@ class Node:
 		url = "broadcst_block"
 		message = block.__dict__
 		return
-
-
-	def mine_block():
-		print("mine_block")
 
 	
 	def validate_block(self,block):
