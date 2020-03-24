@@ -16,15 +16,19 @@ from uuid import uuid4
 
 class Wallet:
 
-	def __init__(self):
+	def __init__(self, utxos={}):
 		##set
 		print("wallet_init")
 		rsa_key = RSA.generate(1024)
 		self.private_key = rsa_key.exportKey('PEM').decode()
 		self.public_key = rsa_key.publickey().exportKey('PEM').decode()
-
-		#self.address
+		self.utxos= utxos
 		#self.transactions
 
-	def balance():
+	def balance(self):
 		print("balance")
+		temp=self.public_key
+		sum=0
+		for i in self.utxos[temp]:
+			sum=sum+i['amount']
+		return sum
