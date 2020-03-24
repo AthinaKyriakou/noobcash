@@ -99,7 +99,7 @@ def receive_node_request():
 
 # receive broadcasted transaction
 # CHECK with validate functionality
-@app.route('/broadcst_trans',methods=['POST'])
+@app.route('/receive_trans',methods=['POST'])
 def broadcst_trans():
 	print("node broadcasted a transaction")
 	data = request.get_json()
@@ -110,7 +110,7 @@ def broadcst_trans():
 
 		# add transaction to block
 		# TODO: get different response if just add or if also mined
-		myNode.add_transaction_to_block(trans)
+		# myNode.add_transaction_to_block(trans)
 	else:
 		return "Error: Illegal Transaction\n",403
 	return "Broadcast transaction OK\n",200
@@ -118,7 +118,7 @@ def broadcst_trans():
 
 # receive broadcasted block
 # CHECK with validate functionality
-@app.route('/broadcst_block', methods = ['POST'])
+@app.route('/receive_block', methods = ['POST'])
 def broadcst_block():
 	data = request.get_json()
 	b = block.Block()
@@ -127,7 +127,7 @@ def broadcst_block():
 	b.nonce = data.get('nonce')
 	b.listOfTransactions = data.get('listOfTransactions')
 	b.blockHash = data.get('hash')
-	if (myNode.validate_block(b)):
+	if (b.nonce != 1 and myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
 	else:
 		return "Error: Block rejected\n", 403

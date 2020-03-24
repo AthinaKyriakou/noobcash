@@ -26,8 +26,9 @@ class Blockchain:
 	def create_blockchain(self):
 		genesis = block.Block(previousHash=1)
 		genesis.nonce=0
+		genesis.myHash()
 		self.block_list.append(genesis)
-		#genesis_tans=transaction() # add parameters for init
+		return
 
 	#add _validated_ block to blockchain by miners
 	def add_block(self,new_block):

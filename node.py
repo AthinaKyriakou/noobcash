@@ -28,12 +28,7 @@ class Node:
 
 	def create_new_block():
 		print("create_block")
-	
-	# def create_wallet():
-	# 	#create a wallet for this node, with a public key and a private key
-		# print("create_wallet")
 
-	
 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
 	def register_node_to_ring(self, nodeID, ip, port, public_key):
@@ -67,7 +62,7 @@ class Node:
 
 		# add genesis UTXO to wallet
 		init_utxos={}
-		init_utxos[sender]={"id":0,"amount":amount}
+		init_utxos[sender]={"id":0,"to_who":sender,"amount":amount}
 		self.wallet.utxos=init_utxos
 		
 
@@ -100,7 +95,7 @@ class Node:
 
 	def broadcast_transaction(self,trans):
 		print("broadcast_transaction")
-		url = "broadcst_trans"
+		url = "receive_trans"
 		message = trans.__dict__ #returns attributes as keys, and their values as value
 		broadcast(message,url)
 		return
@@ -171,19 +166,18 @@ class Node:
 
 	def broadcast_block(self,block):
 		print("broadcast_block")
-		url = "broadcst_block"
+		url = "receive_block"
 		message = block.__dict__
 		return
 
 	
 	def validate_block(self,block):
 		print("validate_block\n")
-		return
+		return block.previousHash == self.valid_chain.block_list[-1].hash
 
-	def valid_proof(other_parameters, difficulty=MINING_DIFFICULTY):
+	def valid_proof(nonce, difficulty=MINING_DIFFICULTY):
 		print("valid_proof")
-
-
+		return nonce[:difficulty] == '0'*difficulty
 
 	#consensus functions
 
