@@ -146,16 +146,17 @@ class Node:
 			return 'error', None
 
 
-	# don't check CAPACITY here!
+	# add transaction to block and mine if it is full
+	# return True if it is mined, else False
 	def add_transaction_to_block(self,transaction):
 		global CAPACITY
 		print("add_transaction_to_block")
-		current_block = self.valid_chain.block_list[-1]
-		current_block.listOfTransactions.append(transaction)
-		# if block if full, mine
-		if (len(current_block.listOfTransactions) == CAPACITY):
+		self.current_block.listOfTransactions.append(transaction)
+		if (len(self.current_block.listOfTransactions) == CAPACITY):
 			mine_block()
-		#return True
+			return True
+		else:
+			return False
 
 
 	# when the block is full, al of the users/nodes are miners -> mining
