@@ -25,5 +25,5 @@ class Block:
 		print("myHash")
 		hash_data = OrderedDict([('prev',self.previousHash),('tmsp',self.timestamp), ('nonce',self.nonce),('transactions',self.listToSerialisable())])
 		tmp = json.dumps(hash_data)
-		self.hash = SHA256.new(tmp.encode())
+		self.hash = SHA256.new(tmp.encode()).hexdigest()
 		return
