@@ -184,13 +184,11 @@ class Node:
 		# self.nonce = 0
 		block.nonce=0
 		# guess = mining_hash(block)
-		block.myHash()
-		guess = block.hash.hexdigest()
+		guess = block.myHash()
 		while guess[:difficulty]!=('0'*difficulty):
 			block.nonce += 1
 			# guess = mining_hash(block)
-			block.myHash()
-			guess = block.hash.hexdigest()
+			guess = block.myHash()
 		block.hash = guess
 		print("Mining succeded!\n")
 		self.broadcast_block(block)

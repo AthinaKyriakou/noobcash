@@ -18,8 +18,8 @@ CORS(app)
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
-btsrp_url = 'http://192.168.1.2:5000' # communication details for bootstrap node
-
+# btsrp_url = 'http://192.168.1.2:5000' # communication details for bootstrap node
+btsrp_url = 'http://localhost:5000'
 myNode = node.Node()
 
 #.......................................................................................
@@ -56,7 +56,7 @@ def connect_node_request():
 	m = json.dumps(message)
 	headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 	response = requests.post(btsrp_url + "/receive", data = m, headers = headers)
-	
+	# print(response)
 	data = response.json() # dictionary containing id + chain 
 	potentialID = data.get('id')
 	current_chain = data.get('chain')
@@ -78,6 +78,7 @@ def receive_node_request():
 	senderInfo = 'http://' + receivedMsg.get('ip') + ':' + receivedMsg.get('port')
 	print(senderInfo)
 	newID = -1
+	print("total:%d, counter:%d\n"%(TOTAL_NODES,NODE_COUNTER))
 	if  NODE_COUNTER < TOTAL_NODES - 1:
 		NODE_COUNTER += 1
 		newID = NODE_COUNTER
@@ -86,9 +87,13 @@ def receive_node_request():
 		new_data['id'] = newID
 		blocks = [] 
 		for block in myNode.valid_chain.block_list:
-			blocks.append(block.__dict__)
+			tmp=block.__dict__
+			tmp['listOfTransactions']=block.listToSerialisable()
+			print(tmp)
+			blocks.append(tmp)
 		new_data['chain'] = blocks
 		message = json.dumps(new_data)
+		print("new_data: ",new_data)
 		return message, 200 # OK
 	else:
 		print(myNode.ring)

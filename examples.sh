@@ -17,6 +17,9 @@ case $function in
 	trans_br)
 		curl -d '{"sender":1,"receiver":2,"amount":3,"id":4,"transaction_inputs":5,"transaction_outputs":6,"signature":7,"sender_privkey":8}' -H "Content-Type: application/json" -X POST http://localhost:5000/receive_trans
 		;;
+	connect)
+		curl http://localhost:5000/connect
+		;;
 	*)
 esac
 echo "\n$(tput setaf 6)<Done>$(tput sgr0)"
