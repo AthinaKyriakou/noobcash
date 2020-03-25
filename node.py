@@ -215,19 +215,65 @@ class Node:
 	# 	print("valid_proof")
 	# 	return nonce[:difficulty] == '0'*difficulty
 
-	def validate_chain(self):
+	def validate_my_chain(self):
 		for b in self.valid_chain.block_list:
 			if ( not self.validate_block(b)):
 				return False
 		return True
 
-	#consensus functions
-	def valid_chain(self, chain):
-		#check for the longer chain across all nodes
-		print("valid_chain")
+	def validate_chain(self, blockchain):
+		for b in blockchain:
+			if (not self.validate_block(b)):
+				return False
+		return True
 
-	def resolve_conflicts(self):
+	#consensus functions
+	def resolve_conflict(self):
 		#resolve correct chain
 		print("resolve_conflicts")
+		max_blockchain = copy.deepcopy(self.valid_chain)
+		max_length = len(self.valid_chain)
+		max_id = self.id
+		max_ip= self.ring[max_id]['address']
+		max_port= self.ring[max_id]['port']
+		#check if someone has longer block chain
+		for key in self.ring:
+			node=self.ring[key]
+			if node['public_key'] == self.wallet.public_key:
+				continue
+			try:
+				#THIS NEEDS TO BE ADDED TO REST
+				n_id= key
+				n_ip = node['address']
+				url = f'{n_ip}/get_blockchain/'
+				response = requests.get(api)
+				if response.status_code != 200:
+					raise Exception('Invalid blockchain response')
+				received_blockchain = json.loads(response.json()['blockchain'])
+				if len(received_blockchain) < max_length:
+					print(f'consensus.{n_id}: Ignoring shorter blockchain {len(received_blockchain)}')
+					continue
+				if not self.validate_chain(b):
+					raise Exception('received invalid chain')
+				#if chain is valid, update
+				max_blockchain = received_blockchain
+				max_length = len(max_blockchain)
+				max_port = node['port']
+				max_ip = n_ip
+				max_id=key
+
+			except Exception as e:
+				print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
+
+		self.resolve_utxo_balance(max_blockchain)
+		
+
+	def resolve_utxo_balance(self, chain):
+		for b in chain:
+			for t in b.listOfTransactions:
+				for t_in in t.transaction_inputs:
+					self.wallet.utxos[t_in['to_who']].remove(t_in)
+				for t_out in t.transaction_outputs:
+					self.wallet.utxos[t_out['to_who']].append(t_out)
 
 
