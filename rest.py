@@ -35,8 +35,8 @@ def init_connection(total_nodes):
 	global TOTAL_NODES
 	TOTAL_NODES = int(total_nodes)
 	print('App starting for ' + str(TOTAL_NODES) + ' nodes')
-	myNode.valid_chain.create_blockchain() # also creates genesis block
-	myNode.create_genesis_transaction(TOTAL_NODES)
+	genesis_trans = myNode.create_genesis_transaction(TOTAL_NODES)
+	myNode.valid_chain.create_blockchain(genesis_trans) # also creates genesis block
 	myNode.id = 0
 	myNode.register_node_to_ring(myNode.id, str(request.environ['REMOTE_ADDR']), '5000', myNode.wallet.public_key)	##TODO: add the balance
 	print('Bootstrap node created: ID = ' + str(myNode.id) + ', blockchain with ' + str(len(myNode.valid_chain.block_list)) + ' block')
