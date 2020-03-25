@@ -229,6 +229,7 @@ class Node:
 	def resolve_conflict(self):
 		#resolve correct chain
 		print("resolve_conflicts")
+		### step 1: ask for blockchain length
 		max_blockchain = copy.deepcopy(self.valid_chain)
 		max_length = len(self.valid_chain)
 		max_id = self.id
@@ -267,6 +268,10 @@ class Node:
 		
 
 	def resolve_utxo_balance(self, chain):
+		#if blockchain changes, wallet utxos need to change
+		for key in self.ring:
+			node_public_key=self.ring['public_key']
+			self.wallet.utxos[node_public_key]={}
 		for b in chain:
 			for t in b.listOfTransactions:
 				for t_in in t.transaction_inputs:
