@@ -12,10 +12,10 @@ case $function in
 		curl http://localhost:5000/init/$num_of_nodes
 		;;
 	block_br)
-		curl -d '{"previousHash":1,"timestamp":2,"nonce":3,"listOfTransactions":4,"blockHash":5}' -H "Content-Type: application/json" -X POST http://localhost:5000/broadcst_block			
+		curl -d '{"previousHash":1,"timestamp":2,"nonce":3,"listOfTransactions":4,"blockHash":5}' -H "Content-Type: application/json" -X POST http://localhost:5000/receive_block			
 		;;
 	trans_br)
-		curl -d '{"sender":1,"receiver":2,"amount":3,"id":4,"transaction_inputs":5,"transaction_outputs":6,"signature":7,"sender_privkey":8}' -H "Content-Type: application/json" -X POST http://localhost:5000/broadcst_trans
+		curl -d '{"sender":1,"receiver":2,"amount":3,"id":4,"transaction_inputs":5,"transaction_outputs":6,"signature":7,"sender_privkey":8}' -H "Content-Type: application/json" -X POST http://localhost:5000/receive_trans
 		;;
 	*)
 esac
