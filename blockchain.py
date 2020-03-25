@@ -23,10 +23,11 @@ class Blockchain:
 		
 	# create bootstrap_node and 
 	# genesis block(previous_hash = 1, nonce = 0)
-	def create_blockchain(self):
+	def create_blockchain(self,genesis_trans):
 		genesis = block.Block(index = 0, previousHash = 1)
+		genesis.listOfTransactions.append(genesis_trans)
 		genesis.myHash()
-		self.block_list.append(genesis)
+		self.block_list.append(genesis) # only genesis block is added instantly to blockchain
 		return
 
 	#add _validated_ block to blockchain by miners
