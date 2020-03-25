@@ -1,7 +1,7 @@
 import blockchain
 import datetime;
 from collections import OrderedDict
-from Crypto.Hash import SHA384
+from Crypto.Hash import SHA256
 import json
 
 class Block:
@@ -17,7 +17,7 @@ class Block:
 
 	def myHash(self):
 		print("myHash")
-		hash_data = OrderedDict([('prev',self.previousHash),('tmsp',self.timestamp), ('nonce',self.nonce)])
-		tmp = json.dumps(hash_data) 
-		self.hash = SHA384.new(tmp.encode())
+		hash_data = OrderedDict([('prev',self.previousHash),('tmsp',self.timestamp), ('nonce',self.nonce),('transactions',self.listOfTransactions)])
+		tmp = json.dumps(hash_data)
+		self.hash = SHA256.new(tmp.encode())
 		return
