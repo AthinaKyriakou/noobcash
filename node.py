@@ -7,7 +7,7 @@ import transaction
 import copy
 from Crypto.Hash import SHA256
 
-MINING_DIFFICULTY = 5
+MINING_DIFFICULTY = 2
 CAPACITY = 5 # run capacity=1, 5, 10
 init_count = -1 #initial id count, accept ids <= 10
 
@@ -21,12 +21,33 @@ class Node:
 		self.ring = {} #here we store information for every node, as its id, its address (ip:port) its public key and its balance
 
 
-	def broadcast(message, url):
-		m = json.dump(message)
+	def toURL(self,nodeID):
+		url = "http://%s:%s"%(self.ring[nodeID]['ip'],self.ring[nodeID]['port'])
+		return url
+
+	def broadcast(self,message, url):
+		m = json.dumps(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 		for nodeID in self.ring:
-			nodeInfo = self.ring[nodeInfo]
-			requests.post(nodeInfo[ip]+"/"+url, data = m, headers = headers)
+			nodeInfo = self.toURL(nodeID)
+			requests.post(nodeInfo+"/"+url, data = m, headers = headers)
+		return
+
+	def broadcast_transaction(self,trans):
+		print("broadcast_transaction")
+		url = "receive_trans"
+		message = trans.__dict__ #returns attributes as keys, and their values as value
+		self.broadcast(message,url)
+		return
+
+	# broadcast current block, added to chain and initialize new one
+	def broadcast_block(self, block):
+		print("broadcast_block")
+		url = "receive_block"
+		message = block.__dict__
+		message['listOfTransactions']=block.listToSerialisable()
+		self.broadcast(message, url)
+		# create_new_block(block)
 		return
 
 
@@ -57,14 +78,13 @@ class Node:
 		data['signature']=None
 		data['sender_privkey']=self.wallet.private_key
 		data['amount']=amount
-		trans = transaction.Transaction(**data)
-		# add transaction to block
-		self.valid_chain.block_list[-1].listOfTransactions.append(trans)
+		trans = transaction.Transaction(**data) # genesis transaction
 
 		# add genesis UTXO to wallet
 		init_utxos={}
 		init_utxos[sender]={"id":0,"to_who":sender,"amount":amount}
-		self.wallet.utxos=init_utxos
+		self.wallet.utxos=init_utxos # bootstrap wallet with 100*n NBCs
+		return trans
 		
 
 	def create_transaction(sender_wallet, receiver_public, amount):
@@ -92,14 +112,6 @@ class Node:
 		except Exception as e:
 			print(f"create_transaction: {e.__class__.__name__}: {e}")
 			return None
-		
-
-	def broadcast_transaction(self,trans):
-		print("broadcast_transaction")
-		url = "receive_trans"
-		message = trans.__dict__ #returns attributes as keys, and their values as value
-		broadcast(message,url)
-		return
 
 
 	def validate_transaction(self, t):
@@ -160,23 +172,28 @@ class Node:
 			return False
 
 
-	def mining_hash(self, block):
-		tmp = f"{block.index}{block.previousHash}{block.timestamp}{block.nonce}{block.listOfTransactions}"
-		tmpEncode = tmp.encode()
-		return SHA256.new(tmpEncode).hexdigest() 
-
+	# def mining_hash(self, block):
+	# 	tmp = f"{block.index}{block.previousHash}{block.timestamp}{block.nonce}{block.listOfTransactions}"
+	# 	tmpEncode = tmp.encode()
+	# 	return SHA256.new(tmpEncode).hexdigest()
 
 	# mine when current block is full
 	# the one who finds the right nonce broadcast the block
 	def mine_block(self, block, difficulty = MINING_DIFFICULTY):
 		print("mine_block")
-		self.nonce = 0
-		guess = mining_hash(block)
+		# self.nonce = 0
+		block.nonce=0
+		# guess = mining_hash(block)
+		block.myHash()
+		guess = block.hash.hexdigest()
 		while guess[:difficulty]!=('0'*difficulty):
-			self.nonce += 1
-			guess = mining_hash(block)
+			block.nonce += 1
+			# guess = mining_hash(block)
+			block.myHash()
+			guess = block.hash.hexdigest()
 		block.hash = guess
-		broadcast_block(block)
+		print("Mining succeded!\n")
+		self.broadcast_block(block)
 
 
     # add block to node's valid chain
@@ -189,24 +206,14 @@ class Node:
 		self.current_block = block.Block(index = idx, previousHash = prevHash)
 
 
-	# broadcast current block, added to chain and initialize new one
-	def broadcast_block(self, block):
-		print("broadcast_block")
-		url = "receive_block"
-		message = block.__dict__
-		broadcast(message, url)
-		create_new_block(block)
-		return
-
-	
 	def validate_block(self, block):
 		print("validate_block\n")
 		return block.previousHash == self.valid_chain.block_list[-1].hash
 
 
-	def valid_proof(nonce, difficulty=MINING_DIFFICULTY):
-		print("valid_proof")
-		return nonce[:difficulty] == '0'*difficulty
+	# def valid_proof(nonce, difficulty=MINING_DIFFICULTY):
+	# 	print("valid_proof")
+	# 	return nonce[:difficulty] == '0'*difficulty
 
 	def validate_chain(self):
 		for b in self.valid_chain.block_list:
