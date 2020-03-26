@@ -29,6 +29,8 @@ class Node:
 		m = json.dumps(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 		for nodeID in self.ring:
+			if(nodeID == self.id): # don't broadcast to myself
+				continue
 			nodeInfo = self.toURL(nodeID)
 			requests.post(nodeInfo+"/"+url, data = m, headers = headers)
 		return
@@ -87,7 +89,6 @@ class Node:
 		init_utxos[sender]=[{"id":0,"to_who":sender,"amount":amount}]
 		self.wallet.utxos=init_utxos # bootstrap wallet with 100*n NBCs
 		return trans
-		
 
 	def create_transaction(self,sender_wallet, receiver_public, amount):
 		#remember to broadcast it
@@ -105,12 +106,13 @@ class Node:
 				inputs.append(utxo['id'])
 				if (sum>=amount):
 					break
-			trxn= transaction.Transaction(key, sender_wallet.private_key, receiver_public, amount, inputs)
+			trxn= copy.deepcopy(transaction.Transaction(key, sender_wallet.private_key, receiver_public, amount, inputs))
 			trxn.sign_transaction() #set id & signature
 			if(sum>amount):
 				trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who':trxn.receiver, 'amount': trxn.amount})
 			self.broadcast_transaction(trxn)
+			self.validate_transaction(trxn) # Node validates the trxn it created
 			return trxn
 
 		except Exception as e:
@@ -149,9 +151,11 @@ class Node:
 			if (temp != t.transaction_outputs):
 				raise Exception('Wrong outputs')
 
+			if(t.receiver not in self.wallet.utxos.keys()): # no transaction has been made with receiver, initialize his wallet
+				self.wallet.utxos[t.receiver]=[]
 			if(len (t.transaction_outputs) == 2):
 				sender_utxos.append(t.transaction_outputs[0]) #removed old utxos , added
-				self.wallet.utxos[t.sender]=sender_utxos
+				self.wallet.utxos[t.sender]=sender_utxos	
 				self.wallet.utxos[t.receiver].append(t.transaction_outputs[1])
 			else:
 				self.wallet.utxos[t.sender]=sender_utxos
@@ -238,9 +242,9 @@ class Node:
 				if node['public_key'] == self.wallet.public_key:
 					continue
 				n_id= key
-				n_ip = node['address']
-				url = f'{n_ip}/get_blockchain/'
-				response = requests.get(api)
+				n_ip = node['ip']
+				url = f'{n_ip}:5000/get_blockchain/'
+				response = requests.get(url)
 				if response.status_code != 200:
 					raise Exception('Invalid blockchain response')
 				received_blockchain = json.loads(response.json()['blockchain'])
