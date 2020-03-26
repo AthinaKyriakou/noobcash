@@ -236,12 +236,11 @@ class Node:
 		max_ip= self.ring[max_id]['address']
 		max_port= self.ring[max_id]['port']
 		#check if someone has longer block chain
-		for key in self.ring:
-			node=self.ring[key]
-			if node['public_key'] == self.wallet.public_key:
-				continue
-			try:
-				#THIS NEEDS TO BE ADDED TO REST
+		try:
+			for key in self.ring:
+				node=self.ring[key]
+				if node['public_key'] == self.wallet.public_key:
+					continue
 				n_id= key
 				n_ip = node['address']
 				url = f'{n_ip}/get_blockchain/'
@@ -260,11 +259,13 @@ class Node:
 				max_port = node['port']
 				max_ip = n_ip
 				max_id=key
+			self.valid_chain=max_blockchain
+			self.wallet.utxos=self.ring[max_id].wallet.utxos
 
-			except Exception as e:
-				print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
+		except Exception as e:
+			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
 
-		self.resolve_utxo_balance(max_blockchain)
+	"""	self.resolve_utxo_balance(max_blockchain)
 		
 
 	def resolve_utxo_balance(self, chain):
@@ -277,6 +278,6 @@ class Node:
 				for t_in in t.transaction_inputs:
 					self.wallet.utxos[t_in['to_who']].remove(t_in)
 				for t_out in t.transaction_outputs:
-					self.wallet.utxos[t_out['to_who']].append(t_out)
+					self.wallet.utxos[t_out['to_who']].append(t_out) """
 
 
