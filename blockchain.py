@@ -27,7 +27,7 @@ class Blockchain:
 		genesis = block.Block(index = 0, previousHash = 1)
 		genesis.listOfTransactions.append(genesis_trans)
 		genesis.myHash()
-		self.block_list.add_block(genesis) # only genesis block is added instantly to blockchain
+		self.add_block(genesis) # only genesis block is added instantly to blockchain
 		return
 
 	# check if block is the first received

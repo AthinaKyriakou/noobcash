@@ -18,7 +18,7 @@ class Block:
 	def listToSerialisable(self):
 		final = []
 		for trans in self.listOfTransactions:
-			final.append(json.dumps(trans.__dict__))
+			final.append(trans.__dict__)
 		return final
 
 	def myHash(self):
