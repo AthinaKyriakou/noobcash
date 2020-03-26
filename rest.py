@@ -130,7 +130,8 @@ def receive_block():
 	b.nonce = data.get('nonce')
 	b.listOfTransactions = data.get('listOfTransactions')
 	b.blockHash = data.get('hash')
-	if (b.nonce != 1 and myNode.validate_block(b)):
+	#if (b.nonce != 1 and myNode.validate_block(b)):
+	if (myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
 	else:
 		return "Error: Block rejected\n", 403

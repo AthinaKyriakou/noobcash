@@ -40,14 +40,15 @@ class Node:
 		self.broadcast(message,url)
 		return
 
-	# broadcast current block, added to chain and initialize new one
+	# broadcast current block
+	# initialize new one for receiving transactions
 	def broadcast_block(self, block):
 		print("broadcast_block")
 		url = "receive_block"
 		message = block.__dict__
-		message['listOfTransactions']=block.listToSerialisable()
+		message['listOfTransactions'] = block.listToSerialisable()
 		self.broadcast(message, url)
-		# create_new_block(block)
+		create_new_block(block)
 		return
 
 
@@ -172,33 +173,24 @@ class Node:
 			return False
 
 
-	# def mining_hash(self, block):
-	# 	tmp = f"{block.index}{block.previousHash}{block.timestamp}{block.nonce}{block.listOfTransactions}"
-	# 	tmpEncode = tmp.encode()
-	# 	return SHA256.new(tmpEncode).hexdigest()
-
 	# mine when current block is full
 	# the one who finds the right nonce broadcast the block
 	def mine_block(self, block, difficulty = MINING_DIFFICULTY):
 		print("mine_block")
-		# self.nonce = 0
-		block.nonce=0
-		# guess = mining_hash(block)
+		block.nonce = 0
 		guess = block.myHash()
 		while guess[:difficulty]!=('0'*difficulty):
 			block.nonce += 1
-			# guess = mining_hash(block)
 			guess = block.myHash()
 		block.hash = guess
 		print("Mining succeded!\n")
 		self.broadcast_block(block)
 
 
-    # add block to node's valid chain
-    # and return a new current one
-	def create_new_block(self, block):	 ##TODO: check if we should do it also for genesis
+    # initialize a new current_block
+    ##TODO: check if we should do it also for genesis
+	def create_new_block(self, block):	 
 		print("create_block")
-		self.valid_chain.add_block(block)
 		idx = block.index + 1
 		prevHash = block.hash
 		self.current_block = block.Block(index = idx, previousHash = prevHash)
