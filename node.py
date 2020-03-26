@@ -260,24 +260,9 @@ class Node:
 				max_ip = n_ip
 				max_id=key
 			self.valid_chain=max_blockchain
-			self.wallet.utxos=self.ring[max_id].wallet.utxos
+			#ΚΑΤΙ ΝΑ ΓΙΝΕΙ ΜΕ ΤΑ UTXOS
 
 		except Exception as e:
 			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
-
-	"""	self.resolve_utxo_balance(max_blockchain)
-		
-
-	def resolve_utxo_balance(self, chain):
-		#if blockchain changes, wallet utxos need to change
-		for key in self.ring:
-			node_public_key=self.ring['public_key']
-			self.wallet.utxos[node_public_key]={}
-		for b in chain:
-			for t in b.listOfTransactions:
-				for t_in in t.transaction_inputs:
-					self.wallet.utxos[t_in['to_who']].remove(t_in)
-				for t_out in t.transaction_outputs:
-					self.wallet.utxos[t_out['to_who']].append(t_out) """
 
 
