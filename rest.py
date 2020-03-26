@@ -2,6 +2,7 @@ import requests
 import json
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
+import copy
 
 
 import block
@@ -59,12 +60,12 @@ def connect_node_request():
 	response = requests.post(btsrp_url + "/receive", data = m, headers = headers)
 	
 	data = response.json() # dictionary containing id + chain
-	potentialID = data.get('id')
-	current_chain = data.get('chain')
-	current_utxos = data.get('utxos')
-	
-	if potentialID > 0:
-		print("____CONNECTED____")
+	error = 'error' in data.keys()
+	if (not error) :
+		print("____CONNECTED____")	
+		potentialID = data.get('id')
+		current_chain = data.get('chain')
+		current_utxos = data.get('utxos')
 		myNode.id = potentialID
 		myNode.wallet.utxos = current_utxos
 		message={}
@@ -93,22 +94,25 @@ def receive_node_request():
 			NODE_COUNTER += 1
 			newID = NODE_COUNTER
 			myNode.register_node_to_ring(newID, str(request.environ['REMOTE_ADDR']), receivedMsg.get('port'), receivedMsg.get('public_key'))	##TODO: add the balance
+			print("__RING__")
+			print(myNode.ring)
 			new_data = {}
 			new_data['id'] = newID
 			new_data['utxos'] = myNode.wallet.utxos
 			blocks = []
 			for block in myNode.valid_chain.block_list:
-				tmp=block.__dict__
+				tmp=copy.deepcopy(block.__dict__)
 				tmp['listOfTransactions']=block.listToSerialisable()
 				blocks.append(tmp)
 			new_data['chain'] = blocks
 			message = json.dumps(new_data)
-			print("__BOOT_WALLET__")
-			print(myNode.wallet.utxos)
 			return message, 200 # OK
 		else:
 			print(myNode.ring)
-			return "Too many nodes already\n",403 #FORBIDDEN
+			print("_Network is full, rejected node_")
+			message = {}
+			message['error'] = 1
+			return json.dumps(message),403 #FORBIDDEN
 	
 	if (receivedMsg.get('flag')==1):
 		myNode.create_transaction(myNode.wallet,receivedMsg.get('public_key'),100) # give 100 NBCs to each node
@@ -152,6 +156,18 @@ def receive_block():
 	else:
 		return "Error: Block rejected\n", 403
 	return "Block broadcast OK\n",200
+
+
+@app.route('/get_blockchain',methods=['GET'])
+def get_blockchain():
+	message = {}
+	blocks = []
+	for block in myNode.valid_chain.block_list:
+		tmp=block.__dict__
+		tmp['listOfTransactions']=block.listToSerialisable()
+		blocks.append(tmp)
+	message['blockchain'] = blocks
+	return message, 200
 
 
 # create new transaction
