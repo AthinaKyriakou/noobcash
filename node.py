@@ -40,14 +40,15 @@ class Node:
 		self.broadcast(message,url)
 		return
 
-	# broadcast current block, added to chain and initialize new one
+	# broadcast current block
+	# initialize new one for receiving transactions
 	def broadcast_block(self, block):
 		print("broadcast_block")
 		url = "receive_block"
 		message = block.__dict__
-		message['listOfTransactions']=block.listToSerialisable()
+		message['listOfTransactions'] = block.listToSerialisable()
 		self.broadcast(message, url)
-		# create_new_block(block)
+		create_new_block(block)
 		return
 
 
@@ -176,33 +177,24 @@ class Node:
 			return False
 
 
-	# def mining_hash(self, block):
-	# 	tmp = f"{block.index}{block.previousHash}{block.timestamp}{block.nonce}{block.listOfTransactions}"
-	# 	tmpEncode = tmp.encode()
-	# 	return SHA256.new(tmpEncode).hexdigest()
-
 	# mine when current block is full
 	# the one who finds the right nonce broadcast the block
 	def mine_block(self, block, difficulty = MINING_DIFFICULTY):
 		print("mine_block")
-		# self.nonce = 0
-		block.nonce=0
-		# guess = mining_hash(block)
+		block.nonce = 0
 		guess = block.myHash()
 		while guess[:difficulty]!=('0'*difficulty):
 			block.nonce += 1
-			# guess = mining_hash(block)
 			guess = block.myHash()
 		block.hash = guess
 		print("Mining succeded!\n")
 		self.broadcast_block(block)
 
 
-    # add block to node's valid chain
-    # and return a new current one
-	def create_new_block(self, block):	 ##TODO: check if we should do it also for genesis
+    # initialize a new current_block
+    ##TODO: check if we should do it also for genesis
+	def create_new_block(self, block):	 
 		print("create_block")
-		self.valid_chain.add_block(block)
 		idx = block.index + 1
 		prevHash = block.hash
 		self.current_block = block.Block(index = idx, previousHash = prevHash)
@@ -217,19 +209,71 @@ class Node:
 	# 	print("valid_proof")
 	# 	return nonce[:difficulty] == '0'*difficulty
 
-	def validate_chain(self):
+	def validate_my_chain(self):
 		for b in self.valid_chain.block_list:
-			if ( not self.validate_block(b)):
+			if (not self.validate_block(b)):
+				return False
+		return True
+
+	def validate_chain(self, blockchain):
+		for b in blockchain:
+			if (not self.validate_block(b)):
 				return False
 		return True
 
 	#consensus functions
-	def valid_chain(self, chain):
-		#check for the longer chain across all nodes
-		print("valid_chain")
-
-	def resolve_conflicts(self):
+	def resolve_conflict(self):
 		#resolve correct chain
 		print("resolve_conflicts")
+		### step 1: ask for blockchain length
+		max_blockchain = copy.deepcopy(self.valid_chain)
+		max_length = len(self.valid_chain)
+		max_id = self.id
+		max_ip= self.ring[max_id]['address']
+		max_port= self.ring[max_id]['port']
+		#check if someone has longer block chain
+		try:
+			for key in self.ring:
+				node=self.ring[key]
+				if node['public_key'] == self.wallet.public_key:
+					continue
+				n_id= key
+				n_ip = node['address']
+				url = f'{n_ip}/get_blockchain/'
+				response = requests.get(api)
+				if response.status_code != 200:
+					raise Exception('Invalid blockchain response')
+				received_blockchain = json.loads(response.json()['blockchain'])
+				if len(received_blockchain) < max_length:
+					print(f'consensus.{n_id}: Ignoring shorter blockchain {len(received_blockchain)}')
+					continue
+				if not self.validate_chain(b):
+					raise Exception('received invalid chain')
+				#if chain is valid, update
+				max_blockchain = received_blockchain
+				max_length = len(max_blockchain)
+				max_port = node['port']
+				max_ip = n_ip
+				max_id=key
+			self.valid_chain=max_blockchain
+			self.wallet.utxos=self.ring[max_id].wallet.utxos
+
+		except Exception as e:
+			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
+
+	"""	self.resolve_utxo_balance(max_blockchain)
+		
+
+	def resolve_utxo_balance(self, chain):
+		#if blockchain changes, wallet utxos need to change
+		for key in self.ring:
+			node_public_key=self.ring['public_key']
+			self.wallet.utxos[node_public_key]={}
+		for b in chain:
+			for t in b.listOfTransactions:
+				for t_in in t.transaction_inputs:
+					self.wallet.utxos[t_in['to_who']].remove(t_in)
+				for t_out in t.transaction_outputs:
+					self.wallet.utxos[t_out['to_who']].append(t_out) """
 
 
