@@ -17,7 +17,7 @@ class Node:
 		self.wallet = wallet.Wallet()
 		self.id = -1 # bootstrap will send the node's final ID
 		self.valid_chain = blockchain.Blockchain()
-		self.current_block = None # where received transactions are collected
+		self.current_block = block.Block() # where received transactions are collected
 		self.ring = {} #here we store information for every node, as its id, its address (ip:port) its public key and its balance
 
 
@@ -55,8 +55,9 @@ class Node:
 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
 	def register_node_to_ring(self, nodeID, ip, port, public_key):
 		if self.id == 0:
-			print(self.id)
 			self.ring[nodeID] = {'ip': ip,'port': port,'public_key': public_key}
+			if(self.id!=nodeID):
+				self.wallet.utxos[public_key]=[] # initialize utxos of other nodes
 			print('register_node')
 		else:
 			print('cannot register node')
@@ -82,16 +83,17 @@ class Node:
 
 		# add genesis UTXO to wallet
 		init_utxos={}
-		init_utxos[sender]={"id":0,"to_who":sender,"amount":amount}
+		init_utxos[sender]=[{"id":0,"to_who":sender,"amount":amount}]
 		self.wallet.utxos=init_utxos # bootstrap wallet with 100*n NBCs
 		return trans
 		
 
-	def create_transaction(sender_wallet, receiver_public, amount):
+	def create_transaction(self,sender_wallet, receiver_public, amount):
 		#remember to broadcast it
 		print("create_transaction")
 		sum = 0
 		inputs = []
+
 		try:
 			if(sender_wallet.balance() < amount):
 				raise Exception("not enough money")
@@ -102,11 +104,12 @@ class Node:
 				inputs.append(utxo['id'])
 				if (sum>=amount):
 					break
-			trxn= Transaction(key, sender_wallet.private_key, receiver_public, amount, inputs)
+			trxn= transaction.Transaction(key, sender_wallet.private_key, receiver_public, amount, inputs)
 			trxn.sign_transaction() #set id & signature
 			if(sum>amount):
 				trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who':trxn.receiver, 'amount': trxn.amount})
+			self.broadcast_transaction(trxn)
 			return trxn
 
 		except Exception as e:
@@ -140,7 +143,8 @@ class Node:
 			temp = []
 			if (val_amount >= t.amount):
 				temp.append({'id': t.id, 'to_who': t.sender, 'amount': val_amount - t.amount })
-				temp.append({'id': t.id, 'to_who': t.sender, 'amount':  t.amount })
+				temp.append({'id': t.id, 'to_who': t.receiver, 'amount':  t.amount })
+
 			if (temp != t.transaction_outputs):
 				raise Exception('Wrong outputs')
 
