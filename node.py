@@ -207,7 +207,7 @@ class Node:
 
 	def validate_my_chain(self):
 		for b in self.valid_chain.block_list:
-			if ( not self.validate_block(b)):
+			if (not self.validate_block(b)):
 				return False
 		return True
 

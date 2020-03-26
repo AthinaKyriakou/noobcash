@@ -133,6 +133,7 @@ def receive_block():
 	#if (b.nonce != 1 and myNode.validate_block(b)):
 	if (myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
+		myNode.valid_chain.is_first_received_block(b)
 	else:
 		return "Error: Block rejected\n", 403
 	return "Block broadcast OK\n",200
