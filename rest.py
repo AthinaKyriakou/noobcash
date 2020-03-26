@@ -19,8 +19,7 @@ CORS(app)
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
-btsrp_url = 'http://192.168.1.2:5000' # communication details for bootstrap node
-# btsrp_url = 'http://192.168.2.10:5000'
+btsrp_url = 'http://83.212.72.137:5000' # communication details for bootstrap node
 myNode = node.Node()
 
 #.......................................................................................
@@ -47,11 +46,9 @@ def init_connection(total_nodes):
 
 # node requests to boostrap connect to the ring
 # OK
-@app.route('/connect', methods=['GET'])
-def connect_node_request():
+@app.route('/connect/<myIP>', methods=['GET'])
+def connect_node_request(myIP):
 	print('Node wants to connect')
-	myIP = str(request.environ['REMOTE_ADDR'])
-	# myPort = str(request.environ['REMOTE_PORT'])
 	myInfo = 'http://' + myIP + ':5000'
 	message = {'ip':myIP, 'port':'5000', 'public_key':myNode.wallet.public_key}
 	message['flag']=0 # flag=0 if connection request
@@ -85,7 +82,7 @@ def receive_node_request():
 	global TOTAL_NODES
 	receivedMsg = request.get_json()
 	if (receivedMsg.get('flag')==0):
-		senderInfo = 'http://' + str(request.environ['REMOTE_ADDR']) + ':' + receivedMsg.get('port')
+		senderInfo = 'http://' + receivedMsg.get('ip') + ':' + receivedMsg.get('port')
 		print(senderInfo)
 		newID = -1
 		print("total:%d, counter:%d\n"%(TOTAL_NODES,NODE_COUNTER))
@@ -93,7 +90,7 @@ def receive_node_request():
 		if  NODE_COUNTER < TOTAL_NODES - 1:
 			NODE_COUNTER += 1
 			newID = NODE_COUNTER
-			myNode.register_node_to_ring(newID, str(request.environ['REMOTE_ADDR']), receivedMsg.get('port'), receivedMsg.get('public_key'))	##TODO: add the balance
+			myNode.register_node_to_ring(newID, str(receivedMsg.get('ip')), receivedMsg.get('port'), receivedMsg.get('public_key'))	##TODO: add the balance
 			print("__RING__")
 			print(myNode.ring)
 			new_data = {}
