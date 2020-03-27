@@ -243,7 +243,8 @@ class Node:
 					continue
 				n_id= key
 				n_ip = node['ip']
-				url = f'{n_ip}:5000/get_blockchain/'
+				n_port = node['port']
+				url = f'{n_ip}:{n_port}/get_blockchain/'
 				response = requests.get(url)
 				if response.status_code != 200:
 					raise Exception('Invalid blockchain response')
