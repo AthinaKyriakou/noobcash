@@ -8,7 +8,7 @@ import copy
 from Crypto.Hash import SHA256
 
 MINING_DIFFICULTY = 2
-CAPACITY = 1		 	# run capacity=1, 5, 10
+CAPACITY = 1		 	# run capacity = 1, 5, 10
 init_count = -1 		#initial id count, accept ids <= 10
 
 
@@ -180,47 +180,51 @@ class Node:
     # initialize a new_block
 	def create_new_block(self, valid_trans):	 
 		print("create_new_block")
-		idx = block.index + 1
-		prevHash = block.hash
-		self.new_block = block.Block(index = idx, previousHash = prevHash)
+		if len(self.valid_chain.block_list) == 0:
+			print('Genesis block was not added properly to valid chain')
+			idx = 0		# TODO: remove once bug fixed
+			prevHash = 0
+		else:
+			prevBlock = self.valid_chain.block_list[-1]
+			idx = prevBlock.index + 1
+			prevHash = prevBlock.hash
+		newBlock = block.Block(index = idx, previousHash = prevHash)
+		newBlock.listOfTransactions = valid_trans
+		return newBlock
 
 
-	# mine when current block is full
-	# the one who finds the right nonce broadcast the block
+	# executed by a thread
 	def mine_block(self, block, difficulty = MINING_DIFFICULTY):
 		print("mine_block")
-		block.nonce = 0
 		guess = block.myHash()
 		while guess[:difficulty]!=('0'*difficulty):
 			block.nonce += 1
 			guess = block.myHash()
 		block.hash = guess
-		print("Mining succeded!\n")
-		self.broadcast_block(block)
+		print("Mining succeded with PoW" + str(guess) + "\n")
+		#self.broadcast_block(block)
+		return
 
 
-	# executed by the mining thread
-	# start with one
-	def start_mining(valid_trans):
-		new_block = create_new_block(valid_trans)
-
+	# create block and assign it to a mining thread
+	def init_miner(self, valid_trans):
+		print("init_miner")
+		newBlock = self.create_new_block(valid_trans)
+		self.mine_block(newBlock)
+		return
 
 
 	# add transaction to list of valid_trans
 	# call mine if it is full
 	# return True if mining was trigerred, else False -> check with asychronous
-	def add_transaction_to_validated(self,transaction):
+	def add_transaction_to_validated(self, transaction):
 		global CAPACITY
 		print("add_transaction_to_validated")
 		self.valid_trans.append(transaction)
 		if len(self.valid_trans) == CAPACITY:
 			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
 			self.valid_trans = []									# reinitialize the valid transactions list
-
-			# create thread for mining
-			# handle somehow the returned value of the thread
-			# start_mining(tmp)
-			print("Hey hey, here we are going to do the mining stuff")
+			self.init_miner(tmp)
 			return True				
 		else:
 			return False

@@ -29,6 +29,7 @@ case $function in
 		ip=$2
 		port=$3
 		# use: ./examples.sh connect <IP> <PORT>
+		# IP format: 192.168.1.<num>
 		curl http://localhost:$port/connect/$ip/$port
 		;;
 	new_transaction)

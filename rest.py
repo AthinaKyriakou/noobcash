@@ -123,14 +123,14 @@ def receive_trans():
 	trans = transaction.Transaction(**data)
 	code, t = myNode.validate_transaction(trans) # added or error
 	if (code =='validated'):
-		print('Node %s: -Transaction from %s to %s is valid\n'%(myNode.id,data.get('sender'),data.get('receiver')))
+		#print('Node %s: -Transaction from %s to %s is valid\n'%(myNode.id,data.get('sender'),data.get('receiver')))
 		isBlockMined = myNode.add_transaction_to_validated(trans)
 		if (isBlockMined):
 			return 'Valid transaction added to block, block is mined OK\n',200
 		else:
 			return 'Valid transaction added to block OK\n',200
 	elif (code == 'pending'):
-		myNode.add_transaction_to_validated(trans)
+		myNode.add_transaction_to_pending(trans)
 		return 'Transaction added to list of pending for approval\n',200
 	else:
 		return 'Error: Illegal Transaction\n',403
