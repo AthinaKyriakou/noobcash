@@ -164,7 +164,14 @@ def get_blockchain():
 		tmp['listOfTransactions']=block.listToSerialisable()
 		blocks.append(tmp)
 	message['blockchain'] = blocks
-	return message, 200
+	message['utxos'] = myNode.wallet.utxos
+	return json.dumps(message), 200
+
+@app.route('/chain_length',methods=['GET'])
+def get_chain_length():
+	message = {}
+	message['length']= len(myNode.valid_chain)
+	return json.dumps(message), 200
 
 
 # create new transaction
