@@ -8,17 +8,20 @@ import copy
 from Crypto.Hash import SHA256
 
 MINING_DIFFICULTY = 2
-CAPACITY = 5 # run capacity=1, 5, 10
-init_count = -1 #initial id count, accept ids <= 10
+CAPACITY = 1		 	# run capacity=1, 5, 10
+init_count = -1 		#initial id count, accept ids <= 10
+
 
 class Node:
 	def __init__(self,NUM_OF_NODES=None):
 		print('node_init')
 		self.wallet = wallet.Wallet()
-		self.id = -1 # bootstrap will send the node's final ID
-		self.valid_chain = blockchain.Blockchain()
-		self.current_block = block.Block() # where received transactions are collected
-		self.ring = {} #here we store information for every node, as its id, its address (ip:port) its public key and its balance
+		self.id = -1 									# bootstrap will send the node's final ID
+		self.valid_chain = blockchain.Blockchain()				
+		self.valid_trans = []							# list of validated transactions are collected to create a new block
+		self.new_block = None							# block created during mining, will be broadcasted
+		self.pending_trans = []							# list of pending for approval trans
+		self.ring = {} 									# store info for every node (id, address (ip:port), public key, balance)
 
 
 	def toURL(self,nodeID):
@@ -29,10 +32,9 @@ class Node:
 		m = json.dumps(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 		for nodeID in self.ring:
-			if(nodeID == self.id): # don't broadcast to myself
-				continue
-			nodeInfo = self.toURL(nodeID)
-			requests.post(nodeInfo+"/"+url, data = m, headers = headers)
+			if(nodeID != self.id): # don't broadcast to myself
+				nodeInfo = self.toURL(nodeID)
+				requests.post(nodeInfo+"/"+url, data = m, headers = headers)
 		return
 
 	def broadcast_transaction(self,trans):
@@ -42,8 +44,10 @@ class Node:
 		self.broadcast(message,url)
 		return
 
+
 	# broadcast current block
 	# initialize new one for receiving transactions
+	# TODO: fix
 	def broadcast_block(self, block):
 		print("broadcast_block")
 		url = "receive_block"
@@ -89,6 +93,7 @@ class Node:
 		init_utxos[sender]=[{"id":0,"to_who":sender,"amount":amount}]
 		self.wallet.utxos=init_utxos # bootstrap wallet with 100*n NBCs
 		return trans
+
 
 	def create_transaction(self,sender_wallet, receiver_public, amount):
 		#remember to broadcast it
@@ -142,7 +147,8 @@ class Node:
 						sender_utxos.remove(utxo)
 						break
 				if not found:
-					raise Exception('missing transaction inputs')
+					#raise Exception('missing transaction inputs')
+					return 'pending', None
 			temp = []
 			if (val_amount >= t.amount):
 				temp.append({'id': t.id, 'to_who': t.sender, 'amount': val_amount - t.amount })
@@ -160,25 +166,24 @@ class Node:
 			else:
 				self.wallet.utxos[t.sender]=sender_utxos
 				self.wallet.utxos[t.receiver].append(t.transaction_outputs[0])
-
-			return 'added',t
+			return 'validated',t
 
 		except Exception as e:
 			print(f"validate transaction: {e.__class__.__name__}: {e}")
 			return 'error', None
 
 
-	# add transaction to block and mine if it is full
-	# return True if it is mined, else False
-	def add_transaction_to_block(self,transaction):
-		global CAPACITY
-		print("add_transaction_to_block")
-		self.current_block.listOfTransactions.append(transaction)
-		if len(self.current_block.listOfTransactions) == CAPACITY:
-			mine_block(self.current_block)
-			return True
-		else:
-			return False
+	def add_transaction_to_pending(self, t):
+		print("add_transaction_to_pending")
+		self.pending_trans.append(t)
+
+
+    # initialize a new_block
+	def create_new_block(self, valid_trans):	 
+		print("create_new_block")
+		idx = block.index + 1
+		prevHash = block.hash
+		self.new_block = block.Block(index = idx, previousHash = prevHash)
 
 
 	# mine when current block is full
@@ -195,13 +200,31 @@ class Node:
 		self.broadcast_block(block)
 
 
-    # initialize a new current_block
-    ##TODO: check if we should do it also for genesis
-	def create_new_block(self, block):	 
-		print("create_block")
-		idx = block.index + 1
-		prevHash = block.hash
-		self.current_block = block.Block(index = idx, previousHash = prevHash)
+	# executed by the mining thread
+	# start with one
+	def start_mining(valid_trans):
+		new_block = create_new_block(valid_trans)
+
+
+
+	# add transaction to list of valid_trans
+	# call mine if it is full
+	# return True if mining was trigerred, else False -> check with asychronous
+	def add_transaction_to_validated(self,transaction):
+		global CAPACITY
+		print("add_transaction_to_validated")
+		self.valid_trans.append(transaction)
+		if len(self.valid_trans) == CAPACITY:
+			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
+			self.valid_trans = []									# reinitialize the valid transactions list
+
+			# create thread for mining
+			# handle somehow the returned value of the thread
+			# start_mining(tmp)
+			print("Hey hey, here we are going to do the mining stuff")
+			return True				
+		else:
+			return False
 
 
 	def validate_block(self, block):

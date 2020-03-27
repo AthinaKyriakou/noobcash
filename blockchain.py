@@ -30,12 +30,6 @@ class Blockchain:
 		self.add_block(genesis) # only genesis block is added instantly to blockchain
 		return
 
-	# check if block is the first received
-	#FILLME
-	def is_first_received_block(self, new_block):
-		if True:
-			self.add_block(new_block)
-
 
 	# add to chain 
 	def add_block(self, new_block):

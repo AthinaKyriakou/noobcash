@@ -116,23 +116,24 @@ def receive_node_request():
 		return "Transfered 100 NBCs to Node", 200 # OK
 
 
-# receive broadcasted transaction
-# CHECK with validate functionality
 @app.route('/receive_trans',methods=['POST'])
 def receive_trans():
 	print("node received a transaction")
 	data = request.get_json()
 	trans = transaction.Transaction(**data)
 	code, t = myNode.validate_transaction(trans) # added or error
-	if (code =='added'):
-		print("Node %s: -Transaction from %s to %s is valid\n"%(myNode.id,data.get('sender'),data.get('receiver')))
-		isBlockMined = myNode.add_transaction_to_block(trans)
+	if (code =='validated'):
+		print('Node %s: -Transaction from %s to %s is valid\n'%(myNode.id,data.get('sender'),data.get('receiver')))
+		isBlockMined = myNode.add_transaction_to_validated(trans)
 		if (isBlockMined):
-			return "Valid transaction added to block, block is mined OK\n",200
+			return 'Valid transaction added to block, block is mined OK\n',200
 		else:
-			return "Valid transaction added to block OK\n",200
+			return 'Valid transaction added to block OK\n',200
+	elif (code == 'pending'):
+		myNode.add_transaction_to_validated(trans)
+		return 'Transaction added to list of pending for approval\n',200
 	else:
-		return "Error: Illegal Transaction\n",403
+		return 'Error: Illegal Transaction\n',403
 
 
 # receive broadcasted block

@@ -22,6 +22,7 @@ case $function in
 	connect)
 		ip=$2
 		# use: ./examples.sh connect <IP>
+		# IP: 192.168.1.<num> 
 		curl http://localhost:5000/connect/$ip
 		;;
 	*)
