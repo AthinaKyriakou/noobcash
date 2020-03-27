@@ -46,11 +46,11 @@ def init_connection(total_nodes):
 
 # node requests to boostrap connect to the ring
 # OK
-@app.route('/connect/<myIP>', methods=['GET'])
-def connect_node_request(myIP):
+@app.route('/connect/<myIP>/<port>', methods=['GET'])
+def connect_node_request(myIP,port):
 	print('Node wants to connect')
-	myInfo = 'http://' + myIP + ':5000'
-	message = {'ip':myIP, 'port':'5000', 'public_key':myNode.wallet.public_key}
+	myInfo = 'http://' + myIP + port
+	message = {'ip':myIP, 'port':port, 'public_key':myNode.wallet.public_key}
 	message['flag']=0 # flag=0 if connection request
 	m = json.dumps(message)
 	headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -150,7 +150,11 @@ def receive_block():
 	#if (b.nonce != 1 and myNode.validate_block(b)):
 	if (myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
-		myNode.valid_chain.is_first_received_block(b)
+		if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
+			myNode.valid_chain.addedBlock.set()
+			myNode.valid_chain.is_first_received_block(b)
+		else:
+			myNode.valid_chain.addedBlock.clear()
 	else:
 		return "Error: Block rejected\n", 403
 	return "Block broadcast OK\n",200
@@ -165,7 +169,14 @@ def get_blockchain():
 		tmp['listOfTransactions']=block.listToSerialisable()
 		blocks.append(tmp)
 	message['blockchain'] = blocks
-	return message, 200
+	message['utxos'] = myNode.wallet.utxos
+	return json.dumps(message), 200
+
+@app.route('/chain_length',methods=['GET'])
+def get_chain_length():
+	message = {}
+	message['length']= len(myNode.valid_chain)
+	return json.dumps(message), 200
 
 
 # create new transaction
@@ -185,6 +196,18 @@ def transaction_new():
 def get_transactions():
 	transactions = blockchain.transactions
 	response = {'transactions': transactions}
+	return jsonify(response), 200
+
+@app.route('/show_balance', methods=['GET'])
+def show_balance():
+	balance = myNode.wallet.balance()
+	response = {'Balance': balance}
+	return jsonify(response), 200
+
+@app.route('/view_transactions', methods=['GET'])
+def view_transactions():
+	last_transactions = myNode.valid_chain[-1].listOfTransactions
+	response= {'List of transactions in the last verified block': last_transactions}
 	return jsonify(response), 200
 
 
