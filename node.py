@@ -242,6 +242,7 @@ class Node:
 				n_id= key
 				n_ip = node['ip']
 				url = f'{n_ip}/chain_length'
+				n_port = node['port']
 				response = requests.get(url)
 				if response.status_code != 200:
 					raise Exception('Invalid blockchain length response')
