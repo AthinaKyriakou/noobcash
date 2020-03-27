@@ -178,7 +178,11 @@ def transaction_new():
 	data = request.get_json()
 	amount=data.get('amount')
 	recipient_address=data.get('recipient_address')
+	ip, port=data.get('recipient_address').split(":")
 	wallet=myNode.wallet()
+	for node in myNode.ring:
+		if (node.get('ip')==ip and node.get('port')==port):
+			recipient_address=node.get("public_key")
 	myNode.create_transaction(wallet,recipient_address,amount)
 	return
 
