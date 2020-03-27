@@ -19,7 +19,7 @@ CORS(app)
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
-btsrp_url = 'http://83.212.72.137:5000' # communication details for bootstrap node
+btsrp_url = 'http://192.168.1.2:5000' # communication details for bootstrap node
 myNode = node.Node()
 
 #.......................................................................................
