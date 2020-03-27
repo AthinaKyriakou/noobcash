@@ -149,7 +149,7 @@ def receive_block():
 	#if (b.nonce != 1 and myNode.validate_block(b)):
 	if (myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
-		if(!myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
+		if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
 			myNode.valid_chain.addedBlock.set()
 			myNode.valid_chain.is_first_received_block(b)
 		else:
@@ -168,7 +168,14 @@ def get_blockchain():
 		tmp['listOfTransactions']=block.listToSerialisable()
 		blocks.append(tmp)
 	message['blockchain'] = blocks
-	return message, 200
+	message['utxos'] = myNode.wallet.utxos
+	return json.dumps(message), 200
+
+@app.route('/chain_length',methods=['GET'])
+def get_chain_length():
+	message = {}
+	message['length']= len(myNode.valid_chain)
+	return json.dumps(message), 200
 
 
 # create new transaction
@@ -192,6 +199,18 @@ def transaction_new():
 def get_transactions():
 	transactions = blockchain.transactions
 	response = {'transactions': transactions}
+	return jsonify(response), 200
+
+@app.route('/show_balance', methods=['GET'])
+def show_balance():
+	balance = myNode.wallet.balance()
+	response = {'Balance': balance}
+	return jsonify(response), 200
+
+@app.route('/view_transactions', methods=['GET'])
+def view_transactions():
+	last_transactions = myNode.valid_chain[-1].listOfTransactions
+	response= {'List of transactions in the last verified block': last_transactions}
 	return jsonify(response), 200
 
 

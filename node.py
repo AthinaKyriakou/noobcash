@@ -229,8 +229,6 @@ class Node:
 	def resolve_conflict(self):
 		#resolve correct chain
 		print("resolve_conflicts")
-		### step 1: ask for blockchain length
-		max_blockchain = copy.deepcopy(self.valid_chain)
 		max_length = len(self.valid_chain)
 		max_id = self.id
 		max_ip= self.ring[max_id]['address']
@@ -243,25 +241,31 @@ class Node:
 					continue
 				n_id= key
 				n_ip = node['ip']
+				url = f'{n_ip}/chain_length'
 				n_port = node['port']
-				url = f'{n_ip}:{n_port}/get_blockchain/'
 				response = requests.get(url)
 				if response.status_code != 200:
-					raise Exception('Invalid blockchain response')
-				received_blockchain = json.loads(response.json()['blockchain'])
-				if len(received_blockchain) < max_length:
-					print(f'consensus.{n_id}: Ignoring shorter blockchain {len(received_blockchain)}')
+					raise Exception('Invalid blockchain length response')
+
+				received_blockchain_len = response.json()['length']
+				if received_blockchain_len < max_length:
+					print(f'consensus.{n_id}: Ignoring shorter blockchain {received_blockchain_len}')
 					continue
-				if not self.validate_chain(b):
-					raise Exception('received invalid chain')
-				#if chain is valid, update
-				max_blockchain = received_blockchain
-				max_length = len(max_blockchain)
+				max_length = received_blockchain_len
 				max_port = node['port']
 				max_ip = n_ip
 				max_id=key
-			self.valid_chain=max_blockchain
-			#ΚΑΤΙ ΝΑ ΓΙΝΕΙ ΜΕ ΤΑ UTXOS
+			#request max blockchain & utxos with id
+			url = f'{max_ip}/get_blockchain/'
+			response = requests.get(url)
+			if response.status_code != 200:
+				raise Exception('Invalid blockchain response')
+			received_blockchain = response.json()['blockchain']
+			received_utxos = response.json()['utxos']
+			if not self.validate_chain(received_blockchain):
+					raise Exception('received invalid chain')
+			self.valid_chain=received_blockchain
+			self.wallet.utxos=received_utxos
 
 		except Exception as e:
 			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
