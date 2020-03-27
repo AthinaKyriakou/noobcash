@@ -94,7 +94,7 @@ while(1):
         inputs = action.split()
         address = inputs[1]
         amount = inputs[2]
-        payload = {'addr':address,'amount':amount}
+        payload = {'recipient_address':address,'amount':amount}
         payload = json.dumps(payload)
         response = requests.post(url,data=payload,headers=headers)
         if((response.json()['message'])!='Not enough'):
