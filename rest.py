@@ -64,6 +64,7 @@ def connect_node_request(myIP,port):
 		current_chain = data.get('chain')
 		current_utxos = data.get('utxos')
 		myNode.id = potentialID
+		myNode.add_block_list_to_chain(current_chain)
 		myNode.wallet.utxos = current_utxos
 		message={}
 		message['public_key']=myNode.wallet.public_key

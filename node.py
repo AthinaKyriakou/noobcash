@@ -27,6 +27,7 @@ class Node:
 		url = "http://%s:%s"%(self.ring[nodeID]['ip'],self.ring[nodeID]['port'])
 		return url
 
+
 	def broadcast(self,message, url):
 		m = json.dumps(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
@@ -36,11 +37,26 @@ class Node:
 				requests.post(nodeInfo+"/"+url, data = m, headers = headers)
 		return
 
+
 	def broadcast_transaction(self,trans):
 		print("broadcast_transaction")
 		url = "receive_trans"
 		message = trans.__dict__ #returns attributes as keys, and their values as value
 		self.broadcast(message,url)
+		return
+
+
+	# converts a json list of dicts to blocks 
+	# and adds them to node's block chain
+	def add_block_list_to_chain(self, block_list):
+		for d in block_list:
+			print("add_block_list_to_chain")
+			newBlock = block.Block(index = d.get('index'), previousHash = d.get('previousHash'))
+			newBlock.timestamp = d.get('timestamp')
+			newBlock.nonce = d.get('nonce')
+			newBlock.listOfTransactions = d.get('listOfTransactions')
+			newBlock.hash = d.get('hash')
+			self.valid_chain.add_block(newBlock)
 		return
 
 
@@ -182,7 +198,7 @@ class Node:
 		print("create_new_block")
 		if len(self.valid_chain.block_list) == 0:
 			print('Genesis block was not added properly to valid chain')
-			idx = 0		# TODO: remove once bug fixed
+			idx = 0		# TODO: handle the bug properly
 			prevHash = 0
 		else:
 			prevBlock = self.valid_chain.block_list[-1]

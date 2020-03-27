@@ -26,7 +26,7 @@ class Blockchain:
 	def create_blockchain(self, genesis_trans):
 		genesis = block.Block(index = 0, previousHash = 1)
 		genesis.listOfTransactions.append(genesis_trans)
-		genesis.myHash()
+		genesis.hash = genesis.myHash()
 		self.add_block(genesis) # only genesis block is added instantly to blockchain
 		return
 
