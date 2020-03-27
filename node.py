@@ -19,7 +19,6 @@ class Node:
 		self.id = -1 									# bootstrap will send the node's final ID
 		self.valid_chain = blockchain.Blockchain()				
 		self.valid_trans = []							# list of validated transactions are collected to create a new block
-		self.new_block = None							# block created during mining, will be broadcasted
 		self.pending_trans = []							# list of pending for approval trans
 		self.ring = {} 									# store info for every node (id, address (ip:port), public key, balance)
 
