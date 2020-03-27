@@ -190,8 +190,8 @@ def transaction_new():
 	for node in myNode.ring:
 		if (node.get('ip')==ip and node.get('port')==port):
 			recipient_address=node.get("public_key")
-	myNode.create_transaction(wallet,recipient_address,amount)
-	return
+	response=myNode.create_transaction(wallet,recipient_address,amount)
+	return response
 
 
 # get all transactions in the blockchain

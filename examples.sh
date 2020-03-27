@@ -5,7 +5,7 @@ function=$1
 echo "$(tput setaf 6)Enter <help> for options"
 echo "<Running: "$function">$(tput sgr0)"
 
-functions=( "init" "connect" "new_transaction" "view_transactions" "balance" )
+functions=( "init" "connect" "new_transaction" "view_transactions" "show_balance" )
 
 expl=('initialize network with bootstrap node'
 		'connect node to network'
@@ -44,10 +44,10 @@ case $function in
 		# use ./examples.sh view_transactions <PORT>
 		curl http://localhost:$port/transactions/view
 		;;
-	balance)
+	show_balance)
 		port=$2
 		# use ./examples.sh balance <PORT>
-		curl http://localhost:$port/balance
+		curl http://localhost:$port/show_balance
 		;;
 	help)
 		for i in {0..4}

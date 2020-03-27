@@ -98,7 +98,7 @@ class Node:
 
 		try:
 			if(sender_wallet.balance() < amount):
-				raise Exception("not enough money")
+				raise Exception("Not enough money!")
 
 			key=sender_wallet.public_key
 			for utxo in sender_wallet.utxos[key]:
@@ -113,7 +113,7 @@ class Node:
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who':trxn.receiver, 'amount': trxn.amount})
 			self.broadcast_transaction(trxn)
 			self.validate_transaction(trxn) # Node validates the trxn it created
-			return trxn
+			return "Created new transaction!"
 
 		except Exception as e:
 			print(f"create_transaction: {e.__class__.__name__}: {e}")
