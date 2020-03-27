@@ -186,9 +186,13 @@ def transaction_new():
 	data = request.get_json()
 	amount=data.get('amount')
 	recipient_address=data.get('recipient_address')
+	ip, port=data.get('recipient_address').split(":")
 	wallet=myNode.wallet()
-	myNode.create_transaction(wallet,recipient_address,amount)
-	return
+	for node in myNode.ring:
+		if (node.get('ip')==ip and node.get('port')==port):
+			recipient_address=node.get("public_key")
+	response=myNode.create_transaction(wallet,recipient_address,amount)
+	return response
 
 
 # get all transactions in the blockchain

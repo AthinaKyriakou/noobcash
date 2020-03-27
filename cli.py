@@ -61,7 +61,7 @@ while(1):
         # first action is t <recipient_address> <amount>
         print("1) Type",colored('t <recipient_address> <amount>','red',attrs = ['reverse','bold']),"in order to create a new transaction.")
         print("   function t takes two arguments ---->")
-        print("      ",colored('first argument','cyan'),"is the recipient's address")
+        print("      ",colored('first argument','cyan'),"is the recipient's address in <IP>:<PORT> format")
         print("      ",colored('second argument','cyan'),"is the amount of coins to transfer")
         print("")
         # second action is view
@@ -97,7 +97,7 @@ while(1):
         payload = {'recipient_address':address,'amount':amount}
         payload = json.dumps(payload)
         response = requests.post(url,data=payload,headers=headers)
-        if((response.json()['message'])!='Not enough'):
+        if((response.json()['message'])!='Not enough money!'):
             print(response.json()['message'])
         else:
             print("It seems like you are broke..You should consider clicking --> https://www.youtube.com/watch?v=TeT0vNbjs5w")
