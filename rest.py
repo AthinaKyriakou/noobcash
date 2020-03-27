@@ -203,6 +203,12 @@ def show_balance():
 	response = {'Balance': balance}
 	return jsonify(response), 200
 
+@app.route('/view_transactions', methods=['GET'])
+def view_transactions():
+	last_transactions = myNode.valid_chain[-1].listOfTransactions
+	response= {'List of transactions in the last verified block': last_transactions}
+	return jsonify(response), 200
+
 
 # run it once for every node
 if __name__ == '__main__':
