@@ -4,7 +4,7 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import copy
 
-
+import time
 import block
 import node
 import blockchain
@@ -21,7 +21,7 @@ NODE_COUNTER = 0
 
 btsrp_url = 'http://192.168.1.2:5000' # communication details for bootstrap node
 myNode = node.Node()
-
+btstrp_IP = '192.168.1.2'
 #.......................................................................................
 # REST services and functions
 #.......................................................................................
@@ -38,7 +38,7 @@ def init_connection(total_nodes):
 	genesis_trans = myNode.create_genesis_transaction(TOTAL_NODES)
 	myNode.valid_chain.create_blockchain(genesis_trans) # also creates genesis block
 	myNode.id = 0
-	myNode.register_node_to_ring(myNode.id, str(request.environ['REMOTE_ADDR']), '5000', myNode.wallet.public_key)	##TODO: add the balance
+	myNode.register_node_to_ring(myNode.id, btstrp_IP, '5000', myNode.wallet.public_key)	##TODO: add the balance
 	print('Bootstrap node created: ID = ' + str(myNode.id) + ', blockchain with ' + str(len(myNode.valid_chain.block_list)) + ' block')
 
 	return render_template('app_start.html')
@@ -75,6 +75,12 @@ def connect_node_request(myIP,port):
 		return "Conection for IP: " + myIP + " to ring refused, too many nodes\n",403
 	
 
+@app.route('/connect/ring',methods=['POST'])
+def get_ring():
+	data=request.get_json()
+	myNode.ring=data
+	return "OK",200
+
 # bootstrap handles node requests to join the ring
 # OK
 @app.route('/receive', methods=['POST'])
@@ -92,8 +98,6 @@ def receive_node_request():
 			NODE_COUNTER += 1
 			newID = NODE_COUNTER
 			myNode.register_node_to_ring(newID, str(receivedMsg.get('ip')), receivedMsg.get('port'), receivedMsg.get('public_key'))	##TODO: add the balance
-			print("__RING__")
-			print(myNode.ring)
 			new_data = {}
 			new_data['id'] = newID
 			new_data['utxos'] = myNode.wallet.utxos
@@ -104,14 +108,19 @@ def receive_node_request():
 				blocks.append(tmp)
 			new_data['chain'] = blocks
 			message = json.dumps(new_data)
+
+			# finished with connections, broadcast final ring
+			if(NODE_COUNTER == TOTAL_NODES-1):
+				myNode.broadcast_ring()
 			return message, 200 # OK
 		else:
 			print(myNode.ring)
 			print("_Network is full, rejected node_")
+			# broadcast  final ring data
 			message = {}
 			message['error'] = 1
 			return json.dumps(message),403 #FORBIDDEN
-	
+
 	if (receivedMsg.get('flag')==1):
 		myNode.create_transaction(myNode.wallet,receivedMsg.get('public_key'),100) # give 100 NBCs to each node
 		return "Transfered 100 NBCs to Node", 200 # OK
@@ -185,15 +194,14 @@ def get_chain_length():
 @app.route('/transaction/new',methods=['POST'])
 def transaction_new():
 	data = request.get_json()
-	amount=data.get('amount')
-	recipient_address=data.get('recipient_address')
-	ip, port=data.get('recipient_address').split(":")
-	wallet=myNode.wallet()
-	for node in myNode.ring:
-		if (node.get('ip')==ip and node.get('port')==port):
-			recipient_address=node.get("public_key")
-	response=myNode.create_transaction(wallet,recipient_address,amount)
-	return response
+	amount=int(data.get('amount'))
+	ip, port=data.get('recipient').split(":")
+	recipient_address=""
+	for node_id,node_info in myNode.ring.items():
+		if (node_info.get('ip')==ip and node_info.get('port')==port):
+			recipient_address=node_info.get("public_key")
+	response=myNode.create_transaction(myNode.wallet,recipient_address,amount)
+	return response,200
 
 
 # get all transactions in the blockchain
@@ -201,19 +209,19 @@ def transaction_new():
 def get_transactions():
 	transactions = blockchain.transactions
 	response = {'transactions': transactions}
-	return jsonify(response), 200
+	return json.dumps(response), 200
 
 @app.route('/show_balance', methods=['GET'])
 def show_balance():
 	balance = myNode.wallet.balance()
 	response = {'Balance': balance}
-	return jsonify(response), 200
+	return json.dumps(response), 200
 
-@app.route('/view_transactions', methods=['GET'])
+@app.route('/transactions/view', methods=['GET'])
 def view_transactions():
-	last_transactions = myNode.valid_chain[-1].listOfTransactions
+	last_transactions = myNode.valid_chain.block_list[-1].listOfTransactions
 	response= {'List of transactions in the last verified block': last_transactions}
-	return jsonify(response), 200
+	return json.dumps(response), 200
 
 
 # run it once for every node
