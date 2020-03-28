@@ -10,8 +10,9 @@ from Crypto.Hash import SHA256
 import os
 import threading
 import threadpool
+import time
 
-MINING_DIFFICULTY = 2
+MINING_DIFFICULTY = 5
 CAPACITY = 1		 	# run capacity = 1, 5, 10
 init_count = -1 		#initial id count, accept ids <= 10
 
@@ -226,19 +227,34 @@ class Node:
 			block.nonce += 1
 			guess = block.myHash()
 		block.hash = guess
-		print("Mining succeded with PoW" + str(guess))
+		print('Mining succeded with PoW ' + str(guess))
+		print(' by{}'.format(threading.current_thread()))
 		return
+
+	# [THREAD]	
+	def validate_block(self, block): #DUMMY: rewrite properly once bug fixed
+		print("validate_block")
+		print('block prev hash: ' + str(block.previousHash))
+		print('the other: ' + str(self.valid_chain.block_list[-1].hash))
+		if (block.previousHash == self.valid_chain.block_list[-1].hash):
+			res = True
+		else:
+			res = False
+		print(res)
+		return res
 
 
 	# [THREAD] create block and call mine
 	def init_mining(self, valid_trans):
 		print("init_miner")
-		print("Task Executed {}".format(threading.current_thread()))
+		print('Task Executed {}'.format(threading.current_thread()))
 		newBlock = self.create_new_block(valid_trans)
 		self.mine_block(newBlock)
 		# ----- LOCK ----------
+		#print("Sleeping")
+		#time.sleep(10)
 		#if self.validate_block(block):
-		#	self.valid_chain.add_block(block)
+		self.valid_chain.add_block(block)
 		# ----- UNLOCK --------
 		#	self.broadcast_block(block)
 		return
@@ -256,14 +272,15 @@ class Node:
 			self.valid_trans = []									# reinitialize the valid transactions list
 			future = self.pool.submit_task(self.init_mining, tmp)
 			print(str(os.getpid()) + ' assigned it to mining thread')
+			#TODO------- REMOVE / JUST FOR TESTING----
+			print("Main process sleeping")
+			time.sleep(60)
+			print("Main process awake")
+			print(future.done())
+			#------------------------------------------
 			return True				
 		else:
 			return False
-
-
-	def validate_block(self, block):
-		print("validate_block\n")
-		return block.previousHash == self.valid_chain.block_list[-1].hash
 
 
 	# def valid_proof(nonce, difficulty=MINING_DIFFICULTY):
