@@ -13,7 +13,7 @@ expl=('initialize network with bootstrap node'
 		"view transactions in last validated block"
 		"view node\'s balance")
 
-use=('use: ./examples.sh init <number of nodes>'
+use=('use: ./examples.sh init <PORT> <number of nodes>'
 	'use: ./examples.sh connect <IP> <PORT>'
 	'use ./examples.sh new_transaction <REC_IP>:<REC_PORT> <amount>'
 	'use ./examples.sh view_transactions <PORT>'
@@ -21,9 +21,10 @@ use=('use: ./examples.sh init <number of nodes>'
 
 case $function in
 	init)
-		num_of_nodes=$2
-		# use: ./examples.sh init <number of nodes>
-		curl http://localhost:5000/init/$num_of_nodes
+		port=$2
+		num_of_nodes=$3
+		# use: ./examples.sh init <PORT> <number of nodes> 
+		curl http://localhost:$port/init/$num_of_nodes
 		;;
 	connect)
 		ip=$2

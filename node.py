@@ -6,6 +6,7 @@ import requests
 import transaction
 import copy
 from Crypto.Hash import SHA256
+from concurrent.futures import ThreadPoolExecutor
 
 MINING_DIFFICULTY = 2
 CAPACITY = 1		 	# run capacity = 1, 5, 10
@@ -21,6 +22,8 @@ class Node:
 		self.valid_trans = []							# list of validated transactions are collected to create a new block
 		self.pending_trans = []							# list of pending for approval trans
 		self.ring = {} 									# store info for every node (id, address (ip:port), public key, balance)
+
+		self.executor = ThreadPoolExecutor(2)			# node's pool of threads (use for mining, broadcast, etc)
 
 
 	def toURL(self,nodeID):
@@ -218,6 +221,10 @@ class Node:
 			guess = block.myHash()
 		block.hash = guess
 		print("Mining succeded with PoW" + str(guess) + "\n")
+		# TODO: check it will be done by thread or process
+		# TODO: and if broadcast will happen in any case
+		#if self.validate_block(block):
+		#	self.valid_chain.add_block(block)
 		#self.broadcast_block(block)
 		return
 
@@ -226,7 +233,10 @@ class Node:
 	def init_miner(self, valid_trans):
 		print("init_miner")
 		newBlock = self.create_new_block(valid_trans)
-		self.mine_block(newBlock)
+		
+		self.executor.submit(mine_block, newBlock)
+
+		#self.mine_block(newBlock)
 		return
 
 
@@ -241,6 +251,7 @@ class Node:
 			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
 			self.valid_trans = []									# reinitialize the valid transactions list
 			self.init_miner(tmp)
+			print('Assigned it to mining thread')
 			return True				
 		else:
 			return False
