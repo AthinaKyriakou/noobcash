@@ -63,4 +63,5 @@ case $function in
 	*)
 esac
 
-echo "\n$(tput setaf 6)<Done>$(tput sgr0)"
+echo ""
+echo "$(tput setaf 6)<Done>$(tput sgr0)"
