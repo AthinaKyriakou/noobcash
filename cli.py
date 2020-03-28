@@ -116,7 +116,7 @@ while(1):
         print(" ")
         print("--------------------------------------------------------------------------------------------------------------------------")
         print(" ")
-        url = base_url+"view_transactions"
+        url = base_url+"transactions/view"
         response = requests.get(url)
         #print(len(response.json()['List of transactions in the last verified block'][0]))
         j=1
