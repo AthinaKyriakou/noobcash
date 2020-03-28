@@ -36,9 +36,9 @@ case $function in
 		port=$2
 		recipient=$3 # in <IP>:<PORT> format
 		amount=$4
-		data='{"recipient":${recipient},"amount":${amount}}'
+		data="{\"recipient\":\"$recipient\",\"amount\":$amount}"
 		# use ./examples.sh new_transaction <REC_IP>:<REC_PORT> <amount>
-		curl data -X POST http://localhost:$port/transaction/new
+		curl -d $data -H "Content-Type: application/json" -X POST http://localhost:$port/transaction/new
 		;;
 	view_transactions)
 		port=$2
