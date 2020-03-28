@@ -232,16 +232,11 @@ class Node:
 		return
 
 	# [THREAD]	
-	def validate_block(self, block): #DUMMY: rewrite properly once bug fixed
+	def validate_block(self, block):
 		print("validate_block")
-		print('block prev hash: ' + str(block.previousHash))
-		print('the other: ' + str(self.valid_chain.block_list[-1].hash))
-		if (block.previousHash == self.valid_chain.block_list[-1].hash):
-			res = True
-		else:
-			res = False
-		print(res)
-		return res
+		print('\nblock prev hash: ' + str(block.previousHash))
+		print('the other: ' + str(self.valid_chain.block_list[-1].hash) + '\n')
+		return block.previousHash == self.valid_chain.block_list[-1].hash
 
 
 	# [THREAD] create block and call mine
@@ -251,12 +246,10 @@ class Node:
 		newBlock = self.create_new_block(valid_trans)
 		self.mine_block(newBlock)
 		# ----- LOCK ----------
-		#print("Sleeping")
-		#time.sleep(10)
-		#if self.validate_block(block):
-		self.valid_chain.add_block(block)
+		if self.validate_block(newBlock):
+			self.valid_chain.add_block(newBlock)
 		# ----- UNLOCK --------
-		#	self.broadcast_block(block)
+		#	self.broadcast_block(newBlock)
 		return
 
 
@@ -273,10 +266,10 @@ class Node:
 			future = self.pool.submit_task(self.init_mining, tmp)
 			print(str(os.getpid()) + ' assigned it to mining thread')
 			#TODO------- REMOVE / JUST FOR TESTING----
-			print("Main process sleeping")
-			time.sleep(60)
-			print("Main process awake")
-			print(future.done())
+			#print("Main process sleeping")
+			#time.sleep(60)
+			#print("Main process awake")
+			#print(future.done())
 			#------------------------------------------
 			return True				
 		else:
@@ -343,5 +336,3 @@ class Node:
 
 		except Exception as e:
 			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
-
-
