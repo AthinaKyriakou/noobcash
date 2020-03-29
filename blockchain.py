@@ -31,8 +31,16 @@ class Blockchain:
 		return
 
 
+	def print_chain(self):
+		print("\n___PRINT CHAIN___")
+		for b in self.block_list:
+			b.print_block()
+
+
 	# add to chain 
 	def add_block(self, new_block):
 		print("add_block")
 		self.block_list.append(new_block)
-		print('Blockchain length: ' + str(len(self.block_list)))
+		self.print_chain()		# prob when used in genesis(transaction), others (dict)
+		print('length: \t' + str(len(self.block_list)))
+
