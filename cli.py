@@ -22,7 +22,7 @@ print(" ")
 print("--------------------------------------------------------------------------------------------------------------------------")
 print(" ")
 print("Hello, I am the blockchain cli.How can I help?",'\U0001f916')
-base_url = "http://0.0.0.0:"+port+"/"
+base_url = "http://127.0.0.1:"+port+"/"
 headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
 flag = 0
@@ -59,9 +59,9 @@ while(1):
         print("There are six available actions listed below")
         print("")
         # first action is t <recipient_address> <amount>
-        print("1) Type",colored('t <recipient_address> <amount>','red',attrs = ['reverse','bold']),"in order to create a new transaction.")
+        print("1) Type",colored('t <recipient_id> <amount>','red',attrs = ['reverse','bold']),"in order to create a new transaction.")
         print("   function t takes two arguments ---->")
-        print("      ",colored('first argument','cyan'),"is the recipient's address in <IP>:<PORT> format")
+        print("      ",colored('first argument','cyan'),"is the recipient's ID")
         print("      ",colored('second argument','cyan'),"is the amount of coins to transfer")
         print("")
         # second action is view
@@ -97,7 +97,7 @@ while(1):
         payload = json.dumps(payload)
         response = requests.post(url,data=payload,headers=headers)
         data=response.json()
-        print(data)
+        print(data['response'])
         # if((response.json()['response'])!='Not enough money!'):
         #     print(response.json()['response'])
         # else:

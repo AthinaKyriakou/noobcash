@@ -66,7 +66,7 @@ def connect_node_request(myIP,port):
 		current_chain = data.get('chain')
 		current_utxos = data.get('utxos')
 		myNode.id = potentialID
-		myNode.add_block_list_to_chain(current_chain)
+		myNode.add_block_list_to_chain(myNode.valid_chain, current_chain)
 		myNode.wallet.utxos = current_utxos
 		message={}
 		message['public_key']=myNode.wallet.public_key
@@ -101,7 +101,7 @@ def receive_node_request():
 			newID = NODE_COUNTER
 			myNode.register_node_to_ring(newID, str(receivedMsg.get('ip')), receivedMsg.get('port'), receivedMsg.get('public_key'))	##TODO: add the balance
 			new_data = {}
-			new_data['id'] = newID
+			new_data['id'] = str(newID)
 			new_data['utxos'] = myNode.wallet.utxos
 			blocks = []
 			for block in myNode.valid_chain.block_list:
@@ -139,7 +139,7 @@ def receive_trans():
 	print("node received a transaction")
 	data = request.get_json()
 	trans = transaction.Transaction(**data)
-	code, t = myNode.validate_transaction(trans) # added or error
+	code = myNode.validate_transaction(myNode.wallet.utxos,trans) # added or error
 	if (code =='validated'):
 		#print('Node %s: -Transaction from %s to %s is valid\n'%(myNode.id,data.get('sender'),data.get('receiver')))
 		isBlockMined = myNode.add_transaction_to_validated(trans)
@@ -177,7 +177,7 @@ def receive_block():
 		return "Error: Block rejected\n", 403
 	return "Block broadcast OK\n",200
 
-
+# sends list of blocks as dict
 @app.route('/get_blockchain',methods=['GET'])
 def get_blockchain():
 	message = {}
@@ -187,7 +187,6 @@ def get_blockchain():
 		tmp['listOfTransactions']=block.listToSerialisable()
 		blocks.append(tmp)
 	message['blockchain'] = blocks
-	message['utxos'] = myNode.wallet.utxos
 	return json.dumps(message), 200
 
 @app.route('/chain_length',methods=['GET'])
@@ -207,11 +206,10 @@ def transaction_new():
 	port = myNode.ring[id].get("port")
 	recipient_address = myNode.ring[id].get("public_key")
 	senderID = myNode.id
-	receiverID = myNode.public_key_to_ring_id(recipient_address)
+	receiverID = myNode.public_key_to_ring_id(recipient_address)	
 	ret = myNode.create_transaction(myNode.wallet, senderID, recipient_address, receiverID, amount)
-	message = {'response':"YOO"}
-	print(message)
-	response = json.dumps(message)
+	message={'response':ret}
+	response=json.dumps(message)
 	return response, 200
 
 
