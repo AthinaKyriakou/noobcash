@@ -66,7 +66,7 @@ def connect_node_request(myIP,port):
 		current_chain = data.get('chain')
 		current_utxos = data.get('utxos')
 		myNode.id = potentialID
-		myNode.add_block_list_to_chain(myNode.valid_chain, current_chain)
+		myNode.add_block_list_to_chain(myNode.valid_chain.block_list, current_chain)
 		myNode.wallet.utxos = current_utxos
 		message={}
 		message['public_key']=myNode.wallet.public_key
@@ -166,12 +166,7 @@ def receive_block():
 	b.blockHash = data.get('hash')
 	#TODO: check with Fot
 	if (myNode.validate_block(b)):
-		print("Node %s: -Block validated\n"%myNode.id)
-		if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
-			myNode.valid_chain.addedBlock.set()
-			myNode.valid_chain.is_first_received_block(b)
-		else:
-			myNode.valid_chain.addedBlock.clear()
+		print("validated")
 	else:
 		return "Error: Block rejected\n", 403
 	return "Block broadcast OK\n",200
@@ -182,7 +177,7 @@ def get_blockchain():
 	message = {}
 	blocks = []
 	for block in myNode.valid_chain.block_list:
-		tmp=block.__dict__
+		tmp=copy.deepcopy(block.__dict__)
 		tmp['listOfTransactions']=block.listToSerialisable()
 		blocks.append(tmp)
 	message['blockchain'] = blocks
@@ -191,7 +186,7 @@ def get_blockchain():
 @app.route('/chain_length',methods=['GET'])
 def get_chain_length():
 	message = {}
-	message['length']= len(myNode.valid_chain)
+	message['length']= len(myNode.valid_chain.block_list)
 	return json.dumps(message), 200
 
 
