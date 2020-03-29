@@ -201,10 +201,10 @@ def get_chain_length():
 def transaction_new():
 	data = request.get_json()
 	amount = int(data.get('amount'))
-	id = str(data.get('id'))
-	ip = myNode.ring[id].get("ip")
-	port = myNode.ring[id].get("port")
-	recipient_address = myNode.ring[id].get("public_key")
+	id = int(data.get('id'))
+	ip = myNode.ring[id].get('ip')
+	port = myNode.ring[id].get('port')
+	recipient_address = myNode.ring[id].get('public_key')
 	senderID = myNode.id
 	receiverID = myNode.public_key_to_ring_id(recipient_address)	
 	ret = myNode.create_transaction(myNode.wallet, senderID, recipient_address, receiverID, amount)
