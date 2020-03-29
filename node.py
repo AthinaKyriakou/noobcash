@@ -26,7 +26,7 @@ class Node:
 		self.valid_trans = []							# list of validated transactions are collected to create a new block
 		self.pending_trans = []							# list of pending for approval trans
 		self.ring = {} 									# store info for every node (id, address (ip:port), public key, balance)
-		self.pool = threadpool.Threadpool()			# node's pool of threads (use for mining, broadcast, etc)
+		self.pool = threadpool.Threadpool()				# node's pool of threads (use for mining, broadcast, etc)
 
 
 	def toURL(self,nodeID):
@@ -60,7 +60,10 @@ class Node:
 			newBlock = block.Block(index = d.get('index'), previousHash = d.get('previousHash'))
 			newBlock.timestamp = d.get('timestamp')
 			newBlock.nonce = d.get('nonce')
-			newBlock.listOfTransactions = d.get('listOfTransactions')
+			# CREATE TRANSACTIONS
+			newBlock.listOfTransactions = []
+			for t in d.get('listOfTransactions'):
+				newBlock.listOfTransactions.append(transaction.Transaction(**t))
 			newBlock.hash = d.get('hash')
 			self.valid_chain.add_block(newBlock)
 		return
@@ -95,6 +98,13 @@ class Node:
 			print('cannot register node')
 
 
+	# get node's id in the ring, given its key
+	def public_key_to_ring_id(self, public_key):
+		for i in self.ring:
+			d = self.ring[i]
+			if d['public_key'] == public_key:
+				return i
+
 	def create_genesis_transaction(self,num_of_nodes):
 		data={}
 		sender=self.wallet.public_key
@@ -111,6 +121,8 @@ class Node:
 		data['signature']=None
 		data['sender_privkey']=self.wallet.private_key
 		data['amount']=amount
+		data['senderID']=0
+		data['receiverID']=0
 		trans = transaction.Transaction(**data) # genesis transaction
 
 		# add genesis UTXO to wallet
@@ -120,7 +132,7 @@ class Node:
 		return trans
 
 
-	def create_transaction(self,sender_wallet, receiver_public, amount):
+	def create_transaction(self, sender_wallet, senderID, receiver_public, receiverID, amount):
 		#remember to broadcast it
 		print("create_transaction")
 		sum = 0
@@ -129,14 +141,13 @@ class Node:
 		try:
 			if(sender_wallet.balance() < amount):
 				raise Exception("Not enough money!")
-
 			key=sender_wallet.public_key
 			for utxo in sender_wallet.utxos[key]:
 				sum=sum+utxo['amount']
 				inputs.append(utxo['id'])
 				if (sum>=amount):
 					break
-			trxn= copy.deepcopy(transaction.Transaction(key, sender_wallet.private_key, receiver_public, amount, inputs))
+			trxn= copy.deepcopy(transaction.Transaction(key, sender_wallet.private_key, senderID, receiver_public, receiverID, amount, inputs))
 			trxn.sign_transaction() #set id & signature
 			if(sum>amount):
 				trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
@@ -227,8 +238,7 @@ class Node:
 			block.nonce += 1
 			guess = block.myHash()
 		block.hash = guess
-		print('Mining succeded with PoW ' + str(guess))
-		print(' by{}'.format(threading.current_thread()))
+		print('Mining succeded with PoW ' + str(guess) + ' by{}'.format(threading.current_thread()))
 		return
 
 	# [THREAD]	
@@ -259,6 +269,7 @@ class Node:
 	def add_transaction_to_validated(self, transaction):
 		global CAPACITY
 		print("add_transaction_to_validated")
+		#print(type(transaction)) #transaction
 		self.valid_trans.append(transaction)
 		if len(self.valid_trans) == CAPACITY:
 			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
