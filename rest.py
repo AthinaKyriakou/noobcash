@@ -16,7 +16,7 @@ import wallet
 app = Flask(__name__)
 CORS(app)
 
-PORT = '5005' # specify your port here in string format
+PORT = '5000' # specify your port here in string format
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
@@ -43,7 +43,7 @@ def init_connection(total_nodes):
 	myNode.register_node_to_ring(myNode.id, btstrp_IP, '5000', myNode.wallet.public_key)
 	print('Bootstrap node created: ID = ' + str(myNode.id) + ', blockchain with ' + str(len(myNode.valid_chain.block_list)) + ' block')
 
-	return render_template('app_start.html')
+	return "Init OK\n",200
 
 
 # node requests to boostrap connect to the ring
@@ -125,7 +125,7 @@ def receive_node_request():
 
 	if (receivedMsg.get('flag')==1):
 		myNode.create_transaction(myNode.wallet,receivedMsg.get('public_key'),100) # give 100 NBCs to each node
-		return "Transfered 100 NBCs to Node", 200 # OK
+		return "Transfered 100 NBCs to Node\n", 200 # OK
 
 
 @app.route('/receive_trans',methods=['POST'])
@@ -192,18 +192,20 @@ def get_chain_length():
 
 
 # create new transaction
-# FILLME
 @app.route('/transaction/new',methods=['POST'])
 def transaction_new():
 	data = request.get_json()
 	amount=int(data.get('amount'))
-	ip, port=data.get('recipient').split(":")
-	recipient_address=""
-	for node_id,node_info in myNode.ring.items():
-		if (node_info.get('ip')==ip and node_info.get('port')==port):
-			recipient_address=node_info.get("public_key")
-	response=myNode.create_transaction(myNode.wallet,recipient_address,amount)
-	return response,200
+	id=str(data.get('id'))
+	ip=myNode.ring[id].get("ip")
+	port=myNode.ring[id].get("port")
+	recipient_address=myNode.ring[id].get("public_key")
+	
+	ret=myNode.create_transaction(myNode.wallet,recipient_address,amount)
+	message={'response':"YOO"}
+	print(message)
+	response=json.dumps(message)
+	return response, 200
 
 
 # get all transactions in the blockchain
@@ -211,19 +213,19 @@ def transaction_new():
 def get_transactions():
 	transactions = blockchain.transactions
 	response = {'transactions': transactions}
-	return json.dumps(response), 200
+	return json.dumps(response)+"\n", 200
 
 @app.route('/show_balance', methods=['GET'])
 def show_balance():
 	balance = myNode.wallet.balance()
 	response = {'Balance': balance}
-	return json.dumps(response), 200
+	return json.dumps(response)+"\n", 200
 
 @app.route('/transactions/view', methods=['GET'])
 def view_transactions():
 	last_transactions = myNode.valid_chain.block_list[-1].listOfTransactions
 	response= {'List of transactions in the last verified block': last_transactions}
-	return json.dumps(response), 200
+	return json.dumps(response)+"\n", 200
 
 
 # run it once for every node

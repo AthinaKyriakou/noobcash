@@ -89,18 +89,19 @@ while(1):
         print(" ")
         print("--------------------------------------------------------------------------------------------------------------------------")
         print(" ")
-        last_trans = action
         url = base_url+"transaction/new"
         inputs = action.split()
-        address = inputs[1]
+        id = inputs[1][-1] # e.g. id3 -> 3
         amount = inputs[2]
-        payload = {'recipient_address':address,'amount':amount}
+        payload = {'id':id,'amount':amount}
         payload = json.dumps(payload)
         response = requests.post(url,data=payload,headers=headers)
-        if((response.json()['message'])!='Not enough money!'):
-            print(response.json()['message'])
-        else:
-            print("It seems like you are broke..You should consider clicking --> https://www.youtube.com/watch?v=TeT0vNbjs5w")
+        data=response.json()
+        print(data)
+        # if((response.json()['response'])!='Not enough money!'):
+        #     print(response.json()['response'])
+        # else:
+        #     print("It seems like you are broke..You should consider clicking --> https://www.youtube.com/watch?v=TeT0vNbjs5w")
 
     elif(action=='show balance' or action=='s'):
 
