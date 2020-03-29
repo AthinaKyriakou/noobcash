@@ -128,6 +128,11 @@ def receive_node_request():
 		return "Transfered 100 NBCs to Node\n", 200 # OK
 
 
+def print_n_return(msg, code):
+	print(msg)
+	return msg, code
+
+
 @app.route('/receive_trans',methods=['POST'])
 def receive_trans():
 	print("node received a transaction")
@@ -138,14 +143,14 @@ def receive_trans():
 		#print('Node %s: -Transaction from %s to %s is valid\n'%(myNode.id,data.get('sender'),data.get('receiver')))
 		isBlockMined = myNode.add_transaction_to_validated(trans)
 		if (isBlockMined):
-			return 'Valid transaction added to block, block is mined OK\n',200
+			return print_n_return('Valid transaction added to block, mining block OK\n', 200)
 		else:
-			return 'Valid transaction added to block OK\n',200
+			return print_n_return('Valid transaction added to block OK\n', 200)
 	elif (code == 'pending'):
 		myNode.add_transaction_to_pending(trans)
-		return 'Transaction added to list of pending for approval\n',200
+		return print_n_return('Transaction added to list of pending for approval\n', 200)
 	else:
-		return 'Error: Illegal Transaction\n',403
+		return print_n_return('Error: Illegal Transaction\n', 403)
 
 
 # receive broadcasted block
@@ -159,7 +164,7 @@ def receive_block():
 	b.nonce = data.get('nonce')
 	b.listOfTransactions = data.get('listOfTransactions')
 	b.blockHash = data.get('hash')
-	#if (b.nonce != 1 and myNode.validate_block(b)):
+	#TODO: check with Fot
 	if (myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
 		if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
@@ -236,3 +241,5 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 	port = args.port
 	app.run(host='0.0.0.0', port=port)
+	# close thread pool once app terminated
+	# https://stackoverflow.com/questions/49992329/the-workers-in-threadpoolexecutor-is-not-really-daemon

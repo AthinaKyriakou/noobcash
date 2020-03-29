@@ -6,9 +6,13 @@ import requests
 import transaction
 import copy
 from Crypto.Hash import SHA256
-from concurrent.futures import ThreadPoolExecutor
 
-MINING_DIFFICULTY = 2
+import os
+import threading
+import threadpool
+import time
+
+MINING_DIFFICULTY = 5
 CAPACITY = 1		 	# run capacity = 1, 5, 10
 init_count = -1 		#initial id count, accept ids <= 10
 
@@ -22,8 +26,7 @@ class Node:
 		self.valid_trans = []							# list of validated transactions are collected to create a new block
 		self.pending_trans = []							# list of pending for approval trans
 		self.ring = {} 									# store info for every node (id, address (ip:port), public key, balance)
-
-		self.executor = ThreadPoolExecutor(2)			# node's pool of threads (use for mining, broadcast, etc)
+		self.pool = threadpool.Threadpool()			# node's pool of threads (use for mining, broadcast, etc)
 
 
 	def toURL(self,nodeID):
@@ -200,7 +203,7 @@ class Node:
 		self.pending_trans.append(t)
 
 
-    # initialize a new_block
+    # [THREAD] initialize a new_block
 	def create_new_block(self, valid_trans):	 
 		print("create_new_block")
 		if len(self.valid_chain.block_list) == 0:
@@ -216,7 +219,7 @@ class Node:
 		return newBlock
 
 
-	# executed by a thread
+	# [THREAD]
 	def mine_block(self, block, difficulty = MINING_DIFFICULTY):
 		print("mine_block")
 		guess = block.myHash()
@@ -224,29 +227,35 @@ class Node:
 			block.nonce += 1
 			guess = block.myHash()
 		block.hash = guess
-		print("Mining succeded with PoW" + str(guess) + "\n")
-		# TODO: check it will be done by thread or process
-		# TODO: and if broadcast will happen in any case
-		#if self.validate_block(block):
-		#	self.valid_chain.add_block(block)
-		#self.broadcast_block(block)
+		print('Mining succeded with PoW ' + str(guess))
+		print(' by{}'.format(threading.current_thread()))
 		return
 
+	# [THREAD]	
+	def validate_block(self, block):
+		print("validate_block")
+		print('\nblock prev hash: ' + str(block.previousHash))
+		print('the other: ' + str(self.valid_chain.block_list[-1].hash) + '\n')
+		return block.previousHash == self.valid_chain.block_list[-1].hash
 
-	# create block and assign it to a mining thread
-	def init_miner(self, valid_trans):
+
+	# [THREAD] create block and call mine
+	def init_mining(self, valid_trans):
 		print("init_miner")
+		print('Task Executed {}'.format(threading.current_thread()))
 		newBlock = self.create_new_block(valid_trans)
-		
-		self.executor.submit(mine_block, newBlock)
-
-		#self.mine_block(newBlock)
+		self.mine_block(newBlock)
+		# ----- LOCK ----------
+		if self.validate_block(newBlock):
+			self.valid_chain.add_block(newBlock)
+		# ----- UNLOCK --------
+		#	self.broadcast_block(newBlock)
 		return
 
 
 	# add transaction to list of valid_trans
 	# call mine if it is full
-	# return True if mining was trigerred, else False -> check with asychronous
+	# return True if mining was trigerred, else False
 	def add_transaction_to_validated(self, transaction):
 		global CAPACITY
 		print("add_transaction_to_validated")
@@ -254,16 +263,17 @@ class Node:
 		if len(self.valid_trans) == CAPACITY:
 			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
 			self.valid_trans = []									# reinitialize the valid transactions list
-			self.init_miner(tmp)
-			print('Assigned it to mining thread')
+			future = self.pool.submit_task(self.init_mining, tmp)
+			print(str(os.getpid()) + ' assigned it to mining thread')
+			#TODO------- REMOVE / JUST FOR TESTING----
+			#print("Main process sleeping")
+			#time.sleep(60)
+			#print("Main process awake")
+			#print(future.done())
+			#------------------------------------------
 			return True				
 		else:
 			return False
-
-
-	def validate_block(self, block):
-		print("validate_block\n")
-		return block.previousHash == self.valid_chain.block_list[-1].hash
 
 
 	# def valid_proof(nonce, difficulty=MINING_DIFFICULTY):
@@ -326,5 +336,3 @@ class Node:
 
 		except Exception as e:
 			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
-
-

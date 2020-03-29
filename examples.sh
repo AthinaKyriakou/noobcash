@@ -38,7 +38,7 @@ case $function in
 		recipient=$3 # in <IP>:<PORT> format
 		amount=$4
 		data="{\"recipient\":\"$recipient\",\"amount\":$amount}"
-		# use ./examples.sh new_transaction <REC_IP>:<REC_PORT> <amount>
+		# use ./examples.sh new_transaction <PORT> <REC_IP>:<REC_PORT> <amount>
 		curl -d $data -H "Content-Type: application/json" -X POST http://localhost:$port/transaction/new
 		;;
 	view_transactions)
@@ -63,4 +63,5 @@ case $function in
 	*)
 esac
 
-echo "\n$(tput setaf 6)<Done>$(tput sgr0)"
+echo ""
+echo "$(tput setaf 6)<Done>$(tput sgr0)"
