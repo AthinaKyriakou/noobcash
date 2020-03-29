@@ -33,6 +33,5 @@ class Block:
 		print('nonce: \t\t' + str(self.nonce))
 		print('transactions: \t')
 		for t in self.listOfTransactions:
-			print(type(t))
 			print('\t\tsender id: ' + str(t.senderID) + ' \t\treceiver id: '+ str(t.receiverID) + ' \t\tamount: '+ str(t.amount))
 		print('hash: \t\t' + str(self.hash))

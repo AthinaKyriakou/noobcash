@@ -60,8 +60,7 @@ class Node:
 			newBlock = block.Block(index = d.get('index'), previousHash = d.get('previousHash'))
 			newBlock.timestamp = d.get('timestamp')
 			newBlock.nonce = d.get('nonce')
-			# CREATE TRANSACTIONS
-			newBlock.listOfTransactions = []
+			newBlock.listOfTransactions = []		# create transactions from received dict
 			for t in d.get('listOfTransactions'):
 				newBlock.listOfTransactions.append(transaction.Transaction(**t))
 			newBlock.hash = d.get('hash')
