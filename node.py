@@ -37,9 +37,12 @@ class Node:
 	def broadcast(self,message, url):
 		m = json.dumps(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+		print("__RING__")
+		print(self.ring)
 		for nodeID in self.ring:
 			if(nodeID != self.id): # don't broadcast to myself
 				nodeInfo = self.toURL(nodeID)
+				print("ID: ",self.id,nodeInfo)
 				requests.post(nodeInfo+"/"+url, data = m, headers = headers)
 		return
 
@@ -54,15 +57,20 @@ class Node:
 
 	# converts a json list of dicts to blocks 
 	# and adds them to node's block chain
-	def add_block_list_to_chain(self, block_list):
+	def add_block_list_to_chain(self,valid_chain, block_list):
 		for d in block_list:
 			print("add_block_list_to_chain")
 			newBlock = block.Block(index = d.get('index'), previousHash = d.get('previousHash'))
 			newBlock.timestamp = d.get('timestamp')
 			newBlock.nonce = d.get('nonce')
-			newBlock.listOfTransactions = d.get('listOfTransactions')
+			newBlock.listOfTransactions = []
+
+			for trans_data in d.get('listOfTransactions'):
+				trans = transaction.Transaction(**trans_data)
+				newBlock.listOfTransactions.append(trans)
+
 			newBlock.hash = d.get('hash')
-			self.valid_chain.add_block(newBlock)
+			valid_chain.add_block(newBlock)
 		return
 
 
@@ -138,19 +146,22 @@ class Node:
 					break
 			trxn= copy.deepcopy(transaction.Transaction(key, sender_wallet.private_key, receiver_public, amount, inputs))
 			trxn.sign_transaction() #set id & signature
-			if(sum>amount):
+			if(sum>=amount):
 				trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who':trxn.receiver, 'amount': trxn.amount})
-			self.broadcast_transaction(trxn)
-			self.validate_transaction(trxn) # Node validates the trxn it created
-			return "Created new transaction!"
+			# print(self.validate_transaction(trxn))
+			if(self.validate_transaction(self.wallet.utxos,trxn)=='validated'): # Node validates the trxn it created
+				self.broadcast_transaction(trxn)
+				return "Created new transaction!"
+			else:
+				return "Transaction not created,error"
 
 		except Exception as e:
 			print(f"create_transaction: {e.__class__.__name__}: {e}")
-			return None
+			return "Not enough money!"
 
 
-	def validate_transaction(self, t):
+	def validate_transaction(self,wallet_utxos, t):
 		#use of signature and NBCs balance
 		print("validate_transaction")
 		try:
@@ -161,7 +172,7 @@ class Node:
 				raise Exception('sender must be different from recepient')
 			if t.amount <= 0:
 				raise Exception('negative amount?')
-			sender_utxos= copy.deepcopy(self.wallet.utxos[t.sender])
+			sender_utxos= copy.deepcopy(wallet_utxos[t.sender])
 			val_amount=0
 			for t_id in t.transaction_inputs:
 				found=False
@@ -173,7 +184,7 @@ class Node:
 						break
 				if not found:
 					#raise Exception('missing transaction inputs')
-					return 'pending', None
+					return 'pending'
 			temp = []
 			if (val_amount >= t.amount):
 				temp.append({'id': t.id, 'to_who': t.sender, 'amount': val_amount - t.amount })
@@ -182,20 +193,20 @@ class Node:
 			if (temp != t.transaction_outputs):
 				raise Exception('Wrong outputs')
 
-			if(t.receiver not in self.wallet.utxos.keys()): # no transaction has been made with receiver, initialize his wallet
-				self.wallet.utxos[t.receiver]=[]
+			if(t.receiver not in wallet_utxos.keys()): # no transaction has been made with receiver, initialize his wallet
+				wallet_utxos[t.receiver]=[]
 			if(len (t.transaction_outputs) == 2):
 				sender_utxos.append(t.transaction_outputs[0]) #removed old utxos , added
-				self.wallet.utxos[t.sender]=sender_utxos	
-				self.wallet.utxos[t.receiver].append(t.transaction_outputs[1])
+				wallet_utxos[t.sender]=sender_utxos	
+				wallet_utxos[t.receiver].append(t.transaction_outputs[1])
 			else:
-				self.wallet.utxos[t.sender]=sender_utxos
-				self.wallet.utxos[t.receiver].append(t.transaction_outputs[0])
-			return 'validated',t
+				wallet_utxos[t.sender]=sender_utxos
+				wallet_utxos[t.receiver].append(t.transaction_outputs[0])
+			return 'validated'
 
 		except Exception as e:
 			print(f"validate transaction: {e.__class__.__name__}: {e}")
-			return 'error', None
+			return 'error'
 
 
 	def add_transaction_to_pending(self, t):
@@ -236,7 +247,7 @@ class Node:
 		print("validate_block")
 		print('\nblock prev hash: ' + str(block.previousHash))
 		print('the other: ' + str(self.valid_chain.block_list[-1].hash) + '\n')
-		return block.previousHash == self.valid_chain.block_list[-1].hash
+		return block.previousHash == self.valid_chain.block_list[-1].hash and block.hash == block.myHash()
 
 
 	# [THREAD] create block and call mine
@@ -275,24 +286,26 @@ class Node:
 		else:
 			return False
 
+	#Consensus functions
 
-	# def valid_proof(nonce, difficulty=MINING_DIFFICULTY):
-	# 	print("valid_proof")
-	# 	return nonce[:difficulty] == '0'*difficulty
+	def chain_REDO(self,chain):
+		tmp_utxos = {}
+		for b in chain[1:]:
+			for trans in b.listOfTransactions:
+				if(not self.validate_transasction(tmp_utxos,trans)):
+					return False
+		return tmp_utxos
 
-	def validate_my_chain(self):
-		for b in self.valid_chain.block_list:
+	# validates and returns list of block objects
+	def validate_chain(self, blocklist):
+		chain = []
+		for b in blocklist:
 			if (not self.validate_block(b)):
-				return False
-		return True
+				return "unconfirmed list" ,False
 
-	def validate_chain(self, blockchain):
-		for b in blockchain:
-			if (not self.validate_block(b)):
-				return False
-		return True
+		self.add_block_list_to_chain(chain,blocklist)
+		return chain, True
 
-	#consensus functions
 	def resolve_conflict(self):
 		#resolve correct chain
 		print("resolve_conflicts")
@@ -308,31 +321,35 @@ class Node:
 					continue
 				n_id= key
 				n_ip = node['ip']
-				url = f'{n_ip}/chain_length'
 				n_port = node['port']
+				url = f'{n_ip}:{n_port}/chain_length'
 				response = requests.get(url)
 				if response.status_code != 200:
 					raise Exception('Invalid blockchain length response')
 
 				received_blockchain_len = response.json()['length']
-				if received_blockchain_len < max_length:
-					print(f'consensus.{n_id}: Ignoring shorter blockchain {received_blockchain_len}')
-					continue
-				max_length = received_blockchain_len
-				max_port = node['port']
-				max_ip = n_ip
-				max_id=key
-			#request max blockchain & utxos with id
-			url = f'{max_ip}/get_blockchain/'
+				if received_blockchain_len > max_length:
+					print(f'consensus.{n_id}: Found longer blockchain => {received_blockchain_len}')
+					max_length = received_blockchain_len
+					max_port = n_port
+					max_ip = n_ip
+					max_id = n_id
+
+			if(max_length == len(self.valid_chain)):
+				return "Tie, keep existing blockchain\n"
+			#request max blockchain
+			url = f'{max_ip}:{max_port}/get_blockchain/'
 			response = requests.get(url)
 			if response.status_code != 200:
 				raise Exception('Invalid blockchain response')
-			received_blockchain = response.json()['blockchain']
-			received_utxos = response.json()['utxos']
-			if not self.validate_chain(received_blockchain):
+			received_blocklist = response.json()['blockchain']
+			new_blockchain ,valid = self.validate_chain(received_blocklist)
+			if not valid:
 					raise Exception('received invalid chain')
-			self.valid_chain=received_blockchain
-			self.wallet.utxos=received_utxos
+			
+			# Validate all transactions in confirmed blockchain
+			self.wallet.utxos=self.chain_REDO(received_blockchain)
+			self.valid_chain = new_blockchain
 
 		except Exception as e:
 			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
