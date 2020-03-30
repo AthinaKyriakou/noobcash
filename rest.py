@@ -16,7 +16,7 @@ import wallet
 app = Flask(__name__)
 CORS(app)
 
-PORT = '5005' # specify your port here in string format
+PORT = '5000' # specify your port here in string format
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
@@ -40,7 +40,7 @@ def init_connection(total_nodes):
 	genesis_trans = myNode.create_genesis_transaction(TOTAL_NODES)
 	myNode.valid_chain.create_blockchain(genesis_trans) # also creates genesis block
 	myNode.id = 0
-	myNode.register_node_to_ring(myNode.id, btstrp_IP, '5000', myNode.wallet.public_key)
+	myNode.register_node_to_ring(myNode.id, btstrp_IP, PORT, myNode.wallet.public_key)
 	print('Bootstrap node created: ID = ' + str(myNode.id) + ', blockchain with ' + str(len(myNode.valid_chain.block_list)) + ' block')
 
 	return "Init OK\n",200

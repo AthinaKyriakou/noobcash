@@ -38,8 +38,6 @@ class Node:
 		print("broadcast")
 		m = json.dumps(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-		#print("__RING__")
-		#print(self.ring)
 		for nodeID in self.ring:
 			if(nodeID != self.id): # don't broadcast to myself
 				nodeInfo = self.toURL(nodeID)
@@ -73,7 +71,7 @@ class Node:
 
 
 	# converts a json list of dicts to blocks 
-	# and adds them to node's block chain
+	# and returns a list of block Objects
 	def add_block_list_to_chain(self,valid_chain_list, block_list):
 		for d in block_list:
 			print("add_block_list_to_chain")
@@ -157,6 +155,7 @@ class Node:
 			# print(self.validate_transaction(trxn))
 			if(self.validate_transaction(self.wallet.utxos,trxn)=='validated'): # Node validates the trxn it created
 				self.broadcast_transaction(trxn)
+				self.add_transaction_to_validated(trxn)
 				return "Created new transaction!"
 			else:
 				return "Transaction not created,error"
@@ -239,6 +238,7 @@ class Node:
 	def mine_block(self, block, difficulty = MINING_DIFFICULTY):
 		print("mine_block")
 		guess = block.myHash()
+		print("________KNOCK KNOCK KNOCKING ON HEAVEN'S DOOR________")
 		while guess[:difficulty]!=('0'*difficulty):
 			block.nonce += 1
 			guess = block.myHash()
@@ -294,6 +294,13 @@ class Node:
 
 	def chain_REDO(self,chain):
 		tmp_utxos = {}
+
+		# REDO bootstrap's utxos which are not validated
+		btstrp_public_k = self.ring[0]['public_key']
+		amount = len(self.ring.keys())*100 # number of nodes * 100 NBCs
+		tmp_utxos[btstrp_public_k] = [{"id":0,"to_who":btstrp_public_k,"amount":amount}]
+
+		# REDO all transaction except genesis transaction
 		for b in chain[1:]:
 			for trans in b.listOfTransactions:
 				if(not self.validate_transasction(tmp_utxos,trans)):
@@ -351,7 +358,7 @@ class Node:
 					raise Exception('received invalid chain')
 			
 			# Validate all transactions in confirmed blockchain
-			self.wallet.utxos=self.chain_REDO(received_blockchain)
+			self.wallet.utxos=self.chain_REDO(new_blockchain)
 			self.valid_chain = new_blockchain
 
 		except Exception as e:
