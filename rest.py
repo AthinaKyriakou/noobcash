@@ -74,13 +74,19 @@ def connect_node_request(myIP,port):
 		response = requests.post(btsrp_url + "/receive", data = json.dumps(message), headers = headers)
 		return "Connection for IP: " + myIP + " established,\nOK\n",200
 	else:
-		return "Conection for IP: " + myIP + " to ring refused, too many nodes\n",403
+		return "Connection for IP: " + myIP + " to ring refused, too many nodes\n",403
 	
 
 @app.route('/connect/ring',methods=['POST'])
 def get_ring():
-	data=request.get_json()
-	myNode.ring=data
+	print('Node receives ring')
+	data = request.get_json()
+	newRing = {}
+	for nodeID in data:
+		tmp = int(nodeID)
+		newRing[tmp] = copy.deepcopy(data[nodeID])
+	print(newRing)
+	myNode.ring = newRing
 	return "OK",200
 
 # bootstrap handles node requests to join the ring
@@ -202,7 +208,7 @@ def transaction_new():
 	amount = int(data.get('amount'))
 	id = int(data.get('id'))
 	print('_________________SHE IS LIKE A RAINBOW_________________')
-	print(myNode.ring[id])
+	print(myNode.ring)
 	ip = myNode.ring[id].get('ip')
 	port = myNode.ring[id].get('port')
 	recipient_address = myNode.ring[id].get('public_key')

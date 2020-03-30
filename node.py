@@ -65,6 +65,8 @@ class Node:
 
 
 	def broadcast_ring(self):
+		print("broadcast_ring")
+		print(self.ring)
 		url="connect/ring"
 		message=self.ring
 		self.broadcast(message,url)
