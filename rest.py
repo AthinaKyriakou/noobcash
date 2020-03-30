@@ -16,7 +16,7 @@ import wallet
 app = Flask(__name__)
 CORS(app)
 
-PORT = '5005' # specify your port here in string format
+PORT = '5000' # specify your port here in string format
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
@@ -196,7 +196,7 @@ def get_chain_length():
 def transaction_new():
 	data = request.get_json()
 	amount = int(data.get('amount'))
-	id = str(data.get('id'))
+	id = data.get('id')
 	ip = myNode.ring[id].get("ip")
 	port = myNode.ring[id].get("port")
 	recipient_address = myNode.ring[id].get("public_key")
