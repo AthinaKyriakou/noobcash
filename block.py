@@ -16,6 +16,7 @@ class Block:
 		self.hash = None
 
 	def listToSerialisable(self):
+		#print("listToSerialisable")
 		final = []
 		for trans in self.listOfTransactions:
 			final.append(trans.__dict__)
