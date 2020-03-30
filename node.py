@@ -35,6 +35,7 @@ class Node:
 
 
 	def broadcast(self,message, url):
+		print("broadcast")
 		m = json.dumps(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 		for nodeID in self.ring:
@@ -52,6 +53,23 @@ class Node:
 		return
 
 
+	def broadcast_block(self, block):
+		print("broadcast_block")
+		url = "receive_block"
+		message = block.__dict__
+		message['listOfTransactions'] = block.listToSerialisable()
+		self.broadcast(message, url)
+		return
+
+
+	def broadcast_ring(self):
+		print("broadcast_ring")
+		print(self.ring)
+		url="connect/ring"
+		message=self.ring
+		self.broadcast(message,url)
+
+
 	# converts a json list of dicts to blocks 
 	# and returns a list of block Objects
 	def add_block_list_to_chain(self,valid_chain_list, block_list):
@@ -67,23 +85,6 @@ class Node:
 			valid_chain_list.append(newBlock)
 		return
 
-
-	# broadcast current block
-	# initialize new one for receiving transactions
-	# TODO: fix
-	def broadcast_block(self, block):
-		print("broadcast_block")
-		url = "receive_block"
-		message = block.__dict__
-		message['listOfTransactions'] = block.listToSerialisable()
-		self.broadcast(message, url)
-		create_new_block(block)
-		return
-
-	def broadcast_ring(self):
-		url="connect/ring"
-		message=self.ring
-		self.broadcast(message,url)
 
 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
@@ -237,18 +238,18 @@ class Node:
 	def mine_block(self, block, difficulty = MINING_DIFFICULTY):
 		print("mine_block")
 		guess = block.myHash()
+		print("________KNOCK KNOCK KNOCKING ON HEAVEN'S DOOR________")
 		while guess[:difficulty]!=('0'*difficulty):
 			block.nonce += 1
 			guess = block.myHash()
 		block.hash = guess
-		print('Mining succeded with PoW ' + str(guess) + ' by{}'.format(threading.current_thread()))
+		print('Mining succeded by{}'.format(threading.current_thread()))
 		return
 
 	# [THREAD]	
 	def validate_block(self, block):
 		print("validate_block")
 		print('\nblock prev hash: ' + str(block.previousHash))
-		print('the other: ' + str(self.valid_chain.block_list[-1].hash) + '\n')
 		return block.previousHash == self.valid_chain.block_list[-1].hash and block.hash == block.myHash()
 
 
@@ -262,7 +263,7 @@ class Node:
 		if self.validate_block(newBlock):
 			self.valid_chain.add_block(newBlock)
 		# ----- UNLOCK --------
-		#	self.broadcast_block(newBlock)
+			self.broadcast_block(newBlock)
 		return
 
 
