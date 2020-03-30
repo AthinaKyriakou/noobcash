@@ -154,10 +154,9 @@ def receive_trans():
 		return print_n_return('Error: Illegal Transaction\n', 403)
 
 
-# receive broadcasted block
-# CHECK with validate functionality
 @app.route('/receive_block', methods = ['POST'])
 def receive_block():
+	print("node received a block")
 	data = request.get_json()
 	b = block.Block()
 	b.previousHash = data.get('previousHash')
@@ -165,17 +164,17 @@ def receive_block():
 	b.nonce = data.get('nonce')
 	b.listOfTransactions = data.get('listOfTransactions')
 	b.blockHash = data.get('hash')
-	#TODO: check with Fot
 	if (myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
-		if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
-			myNode.valid_chain.addedBlock.set()
-			myNode.valid_chain.is_first_received_block(b)
-		else:
-			myNode.valid_chain.addedBlock.clear()
+		#if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
+			#myNode.valid_chain.addedBlock.set()
+			#myNode.valid_chain.is_first_received_block(b)
 	else:
-		return "Error: Block rejected\n", 403
-	return "Block broadcast OK\n",200
+		print("Node %s: -Block not validated\n"%myNode.id)
+			#myNode.valid_chain.addedBlock.clear()
+	#else:
+		#return "Error: Block rejected\n", 403
+	return "Block received OK\n",200
 
 # sends list of blocks as dict
 @app.route('/get_blockchain',methods=['GET'])
@@ -202,14 +201,16 @@ def transaction_new():
 	data = request.get_json()
 	amount = int(data.get('amount'))
 	id = int(data.get('id'))
+	print('_________________SHE IS LIKE A RAINBOW_________________')
+	print(myNode.ring[id])
 	ip = myNode.ring[id].get('ip')
 	port = myNode.ring[id].get('port')
 	recipient_address = myNode.ring[id].get('public_key')
 	senderID = myNode.id
 	receiverID = myNode.public_key_to_ring_id(recipient_address)	
 	ret = myNode.create_transaction(myNode.wallet, senderID, recipient_address, receiverID, amount)
-	message={'response':ret}
-	response=json.dumps(message)
+	message = {'response':ret}
+	response = json.dumps(message)
 	return response, 200
 
 
