@@ -39,21 +39,16 @@ class Node:
 
 	def broadcast(self,message, url):
 		print("broadcast")
-		print(self.id)
-		print(type(self.id))
 		m = json.dumps(message)
 		headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 		for nodeID in self.ring:
 			if (nodeID != self.id):	# don't broadcast to myself
-				print('YOOOOOOOO')
-				print(nodeID)
 				nodeInfo = self.toURL(nodeID)
 				requests.post(nodeInfo+"/"+url, data = m, headers = headers)
 		return
 
 
-	def broadcast_transaction(self,trans):
-		print("broadcast_transaction")
+	def broadcast_transaction(self, trans):
 		url = "receive_trans"
 		message = trans.__dict__ #returns attributes as keys, and their values as value
 		self.broadcast(message,url)
@@ -267,9 +262,17 @@ class Node:
 		# ----- LOCK ----------
 		if self.validate_block(newBlock):
 			self.valid_chain.add_block(newBlock)
+			self.remove_from_rollback(valid_trans)
 		# ----- UNLOCK --------
 			#self.broadcast_block(newBlock)
 		return
+
+
+	# comparing transaction objects
+	def remove_from_rollback(self, valid_trans):
+		print("remove_from_rollback")
+		tmp = [trans for trans in self.rollback_trans if trans not in valid_trans]
+		self.rollback_trans = tmp
 
 
 	# add transaction to list of valid_trans

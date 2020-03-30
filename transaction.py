@@ -19,17 +19,24 @@ class Transaction:
     def __init__(self, sender, sender_privkey, senderID, receiver, receiverID, amount, transaction_inputs, transaction_outputs = [], id = None, signature = None):
         ##set
         print('transaction_init')
-        self.sender = sender                                #public key του wallet από το οποίο προέρχονται τα χρήματα
-        self.receiver = receiver                            #public key του wallet στο οποίο θα καταλήξουν τα χρήματα
-        self.senderID = senderID                            #ring IDs
+        self.sender = sender                                # public key str
+        self.receiver = receiver                            # public key str
+        self.senderID = senderID                            # ring IDs int
         self.receiverID = receiverID
-        self.amount = amount                                #το ποσό που θα μεταφερθεί
-        self.id = id                                        #το hash του transaction
-        self.transaction_inputs = transaction_inputs        #λίστα από Transaction Input . previousOutputId
-        self.transaction_outputs = transaction_outputs      #λίστα από Transaction Output 
-        self.signature = signature		
-        self.sender_privkey = sender_privkey
+        self.amount = amount                                # int
+        self.id = id                                        # transaction hash (str)
+        self.transaction_inputs = transaction_inputs        # list of int
+        self.transaction_outputs = transaction_outputs      # list of dicts
+        self.signature = signature                          # str
+        self.sender_privkey = sender_privkey                # str
 
+
+    # 2 transactions are equal when they have the same hash (compare 2 strings)
+    # used to remove from rollback
+    def __eq__(self, other):    
+        if not isinstance(other, Transaction):
+            return NotImplemented
+        return self.id == other.id
 
     def to_dict(self):
         print('to_dict')
@@ -38,7 +45,7 @@ class Transaction:
     def hash(self):
         trans = OrderedDict([('sender', self.sender), ('receiver', self.receiver), ('amount', self.amount), ('transaction_inputs', self.transaction_inputs)])
         temp=json.dumps(trans) 
-        return SHA384.new(temp.encode()) #κρυπογραφεί τα στοιχεία του transaction που είναι σε utf8
+        return SHA384.new(temp.encode())
 
     def sign_transaction(self):
         print('sign_transaction')
