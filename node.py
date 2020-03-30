@@ -43,7 +43,6 @@ class Node:
 		for nodeID in self.ring:
 			if(nodeID != self.id): # don't broadcast to myself
 				nodeInfo = self.toURL(nodeID)
-				print("ID: ",self.id,nodeInfo)
 				requests.post(nodeInfo+"/"+url, data = m, headers = headers)
 		return
 
@@ -73,7 +72,7 @@ class Node:
 
 	# converts a json list of dicts to blocks 
 	# and adds them to node's block chain
-	def add_block_list_to_chain(self,valid_chain, block_list):
+	def add_block_list_to_chain(self,valid_chain_list, block_list):
 		for d in block_list:
 			print("add_block_list_to_chain")
 			newBlock = block.Block(index = d.get('index'), previousHash = d.get('previousHash'))
@@ -83,7 +82,7 @@ class Node:
 			for t in d.get('listOfTransactions'):
 				newBlock.listOfTransactions.append(transaction.Transaction(**t))
 			newBlock.hash = d.get('hash')
-			valid_chain.add_block(newBlock)
+			valid_chain_list.append(newBlock)
 		return
 
 
@@ -302,19 +301,18 @@ class Node:
 	# validates and returns list of block objects
 	def validate_chain(self, blocklist):
 		chain = []
-		for b in blocklist:
+		self.add_block_list_to_chain(chain,blocklist)
+		for b in chain:
 			if (not self.validate_block(b)):
 				return "unconfirmed list" ,False
-
-		self.add_block_list_to_chain(chain,blocklist)
 		return chain, True
 
 	def resolve_conflict(self):
 		#resolve correct chain
 		print("resolve_conflicts")
-		max_length = len(self.valid_chain)
+		max_length = len(self.valid_chain.block_list)
 		max_id = self.id
-		max_ip= self.ring[max_id]['address']
+		max_ip= self.ring[max_id]['ip']
 		max_port= self.ring[max_id]['port']
 		#check if someone has longer block chain
 		try:
@@ -325,12 +323,12 @@ class Node:
 				n_id= key
 				n_ip = node['ip']
 				n_port = node['port']
-				url = f'{n_ip}:{n_port}/chain_length'
+				url = f'http://{n_ip}:{n_port}/chain_length'
 				response = requests.get(url)
 				if response.status_code != 200:
 					raise Exception('Invalid blockchain length response')
 
-				received_blockchain_len = response.json()['length']
+				received_blockchain_len = int(response.json()['length'])
 				if received_blockchain_len > max_length:
 					print(f'consensus.{n_id}: Found longer blockchain => {received_blockchain_len}')
 					max_length = received_blockchain_len
@@ -338,10 +336,10 @@ class Node:
 					max_ip = n_ip
 					max_id = n_id
 
-			if(max_length == len(self.valid_chain)):
+			if(max_length == len(self.valid_chain.block_list)):
 				return "Tie, keep existing blockchain\n"
-			#request max blockchain
-			url = f'{max_ip}:{max_port}/get_blockchain/'
+			# request max blockchain
+			url = f'http://{max_ip}:{max_port}/get_blockchain'
 			response = requests.get(url)
 			if response.status_code != 200:
 				raise Exception('Invalid blockchain response')

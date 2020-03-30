@@ -66,7 +66,7 @@ def connect_node_request(myIP,port):
 		current_chain = data.get('chain')
 		current_utxos = data.get('utxos')
 		myNode.id = potentialID
-		myNode.add_block_list_to_chain(myNode.valid_chain, current_chain)
+		myNode.add_block_list_to_chain(myNode.valid_chain.block_list, current_chain)
 		myNode.wallet.utxos = current_utxos
 		message={}
 		message['public_key']=myNode.wallet.public_key
@@ -182,7 +182,7 @@ def get_blockchain():
 	message = {}
 	blocks = []
 	for block in myNode.valid_chain.block_list:
-		tmp=block.__dict__
+		tmp=copy.deepcopy(block.__dict__)
 		tmp['listOfTransactions']=block.listToSerialisable()
 		blocks.append(tmp)
 	message['blockchain'] = blocks
@@ -191,7 +191,7 @@ def get_blockchain():
 @app.route('/chain_length',methods=['GET'])
 def get_chain_length():
 	message = {}
-	message['length']= len(myNode.valid_chain)
+	message['length']= len(myNode.valid_chain.block_list)
 	return json.dumps(message), 200
 
 
