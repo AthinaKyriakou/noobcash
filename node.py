@@ -122,7 +122,6 @@ class Node:
 		data['transaction_outputs'].append(outpt_receiver)
 		data['id']=0
 		data['signature']=None
-		data['sender_privkey']=self.wallet.private_key
 		data['amount']=amount
 		data['senderID']=0
 		data['receiverID']=0
@@ -135,23 +134,22 @@ class Node:
 		return trans
 
 
-	def create_transaction(self, sender_wallet, senderID, receiver_public, receiverID, amount):
+	def create_transaction(self, sender_public, senderID, receiver_public, receiverID, amount):
 		print("create_transaction")
 		sum = 0
 		inputs = []
 		try:
-			if(sender_wallet.balance() < amount):
+			if(self.wallet.balance() < amount):
 				raise Exception("Not enough money!")
-			key = sender_wallet.public_key
-			for utxo in sender_wallet.utxos[key]:
+			key = sender_public
+			for utxo in self.wallet.utxos[key]:
 				sum = sum+utxo['amount']
 				inputs.append(utxo['id'])
 				if (sum >= amount):
 					break
-			trxn = copy.deepcopy(transaction.Transaction(key, sender_wallet.private_key, senderID, receiver_public, receiverID, amount, inputs))
-			trxn.sign_transaction() #set id & signature
-			if(sum >= amount):
-				trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
+			trxn = copy.deepcopy(transaction.Transaction(sender_public, senderID, receiver_public, receiverID, amount, inputs))
+			trxn.sign_transaction(self.wallet.private_key) #set id & signature
+			trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who':trxn.receiver, 'amount': trxn.amount})
 			# print(self.validate_transaction(trxn))
 			if(self.validate_transaction(self.wallet.utxos,trxn) == 'validated'): # Node validates the trxn it created
@@ -196,7 +194,6 @@ class Node:
 
 			if (temp != t.transaction_outputs):
 				raise Exception('Wrong outputs')
-
 			if(t.receiver not in wallet_utxos.keys()): # no transaction has been made with receiver, initialize his wallet
 				wallet_utxos[t.receiver]=[]
 			if(len (t.transaction_outputs) == 2):

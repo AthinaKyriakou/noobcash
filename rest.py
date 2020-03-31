@@ -131,7 +131,7 @@ def receive_node_request():
 
 	if (receivedMsg.get('flag')==1):
 		receiverID = myNode.public_key_to_ring_id(receivedMsg.get('public_key'))
-		myNode.create_transaction(myNode.wallet, myNode.id, receivedMsg.get('public_key'), receiverID, 100) # give 100 NBCs to each node
+		myNode.create_transaction(myNode.wallet.public_key, myNode.id, receivedMsg.get('public_key'), receiverID, 100) # give 100 NBCs to each node
 		return "Transfered 100 NBCs to Node\n", 200 # OK
 
 
@@ -219,7 +219,7 @@ def transaction_new():
 	recipient_address = myNode.ring[id].get('public_key')
 	senderID = myNode.id
 	receiverID = myNode.public_key_to_ring_id(recipient_address)	
-	ret = myNode.create_transaction(myNode.wallet, senderID, recipient_address, receiverID, amount)
+	ret = myNode.create_transaction(myNode.wallet.public_key, senderID, recipient_address, receiverID, amount)
 	message = {'response':ret}
 	response = json.dumps(message)
 	return response, 200
