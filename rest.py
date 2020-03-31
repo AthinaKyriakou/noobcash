@@ -150,7 +150,7 @@ def receive_trans():
 	if (code =='validated'):
 		print('VIVA LA TRANSACTION VALIDA %s to %s!' %(data.get('senderID'), data.get('receiverID')))
 		isBlockMined = myNode.add_transaction_to_validated(trans)
-		myNode.rollback_trans.append(trans)
+		myNode.add_transaction_to_rollback(trans)
 		
 		if (isBlockMined):
 			return print_n_return('Valid transaction added to block, mining block OK\n', 200)
