@@ -16,7 +16,7 @@ import wallet
 app = Flask(__name__)
 CORS(app)
 
-PORT = '5000' # specify your port here in string format
+PORT = '5005' # specify your port here in string format
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
@@ -62,7 +62,7 @@ def connect_node_request(myIP,port):
 	error = 'error' in data.keys()
 	if (not error) :
 		print("____CONNECTED____")	
-		potentialID = data.get('id')
+		potentialID = int(data.get('id'))
 		current_chain = data.get('chain')
 		current_utxos = data.get('utxos')
 		myNode.id = potentialID
@@ -85,7 +85,7 @@ def get_ring():
 	for nodeID in data:
 		tmp = int(nodeID)
 		newRing[tmp] = copy.deepcopy(data[nodeID])
-	print(newRing)
+	#print(newRing)
 	myNode.ring = newRing
 	return "OK",200
 
@@ -146,16 +146,21 @@ def receive_trans():
 	data = request.get_json()
 	trans = transaction.Transaction(**data)
 	code = myNode.validate_transaction(myNode.wallet.utxos,trans) # added or error
+	
 	if (code =='validated'):
-		#print('Node %s: -Transaction from %s to %s is valid\n'%(myNode.id,data.get('sender'),data.get('receiver')))
+		print('VIVA LA TRANSACTION VALIDA %s to %s!' %(data.get('senderID'), data.get('receiverID')))
 		isBlockMined = myNode.add_transaction_to_validated(trans)
+		myNode.rollback_trans.append(trans)
+		
 		if (isBlockMined):
 			return print_n_return('Valid transaction added to block, mining block OK\n', 200)
 		else:
 			return print_n_return('Valid transaction added to block OK\n', 200)
+	
 	elif (code == 'pending'):
 		myNode.add_transaction_to_pending(trans)
 		return print_n_return('Transaction added to list of pending for approval\n', 200)
+	
 	else:
 		return print_n_return('Error: Illegal Transaction\n', 403)
 
@@ -207,8 +212,8 @@ def transaction_new():
 	data = request.get_json()
 	amount = int(data.get('amount'))
 	id = int(data.get('id'))
-	print('_________________SHE IS LIKE A RAINBOW_________________')
-	print(myNode.ring)
+	print('*** SHE IS LIKE A RAINBOW ***')
+	#print(myNode.ring)
 	ip = myNode.ring[id].get('ip')
 	port = myNode.ring[id].get('port')
 	recipient_address = myNode.ring[id].get('public_key')
