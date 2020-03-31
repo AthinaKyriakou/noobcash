@@ -54,10 +54,12 @@ class Node:
 		return
 
 	def broadcast_block(self, block):
-		print("broadcast_block")
+		print('***node ' + str(self.id) + ' broadcast_block')
 		url = "receive_block"
 		message = block.__dict__
+		tmp = []
 		message['listOfTransactions'] = block.listToSerialisable()
+		#print(message)
 		self.broadcast(message, url)
 		return
 
@@ -287,10 +289,13 @@ class Node:
 		self.mine_block(newBlock)
 		# ----- LOCK ----------
 		if self.validate_block(newBlock):
+			print('***Mined block valida will be broadcasted')
 			self.valid_chain.add_block(newBlock)
 			self.remove_from_rollback(valid_trans)
 		# ----- UNLOCK --------
-			#self.broadcast_block(newBlock)
+			self.broadcast_block(newBlock)
+		else:
+			print('***Mined block invalida will not be broadcasted')
 		return
 
 

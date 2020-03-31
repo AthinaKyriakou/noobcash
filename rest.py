@@ -167,22 +167,22 @@ def receive_trans():
 
 @app.route('/receive_block', methods = ['POST'])
 def receive_block():
-	print("node received a block")
-	data = request.get_json()
-	b = block.Block()
-	b.previousHash = data.get('previousHash')
-	b.timestamp = data.get('timestamp')
-	b.nonce = data.get('nonce')
-	b.listOfTransactions = data.get('listOfTransactions')
-	b.blockHash = data.get('hash')
-	if (myNode.validate_block(b)):
-		print("Node %s: -Block validated\n"%myNode.id)
+	print('***node ' + str(myNode.id) + ' received a block')
+	#data = request.get_json()
+	#b = block.Block()
+	#b.previousHash = data.get('previousHash')
+	#b.timestamp = data.get('timestamp')
+	#b.nonce = data.get('nonce')
+	#b.listOfTransactions = data.get('listOfTransactions')
+	#b.blockHash = data.get('hash')
+	#if (myNode.validate_block(b)):
+		#print("Node %s: -Block validated\n"%myNode.id)
 		#if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
 			#myNode.valid_chain.addedBlock.set()
 			#myNode.valid_chain.is_first_received_block(b)
-	else:
-		print("Node %s: -Block not validated\n"%myNode.id)
-			#myNode.valid_chain.addedBlock.clear()
+	#else:
+		#print("Node %s: -Block not validated\n"%myNode.id)
+		#	#myNode.valid_chain.addedBlock.clear()
 	#else:
 		#return "Error: Block rejected\n", 403
 	return "Block received OK\n",200
