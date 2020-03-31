@@ -12,7 +12,7 @@ import threading
 import threadpool
 import time
 
-MINING_DIFFICULTY = 5
+MINING_DIFFICULTY = 4
 CAPACITY = 1		 	# run capacity = 1, 5, 10
 init_count = -1 		#initial id count, accept ids <= 10
 
@@ -138,12 +138,13 @@ class Node:
 		print("create_transaction")
 		sum = 0
 		inputs = []
+		
 		try:
 			if(self.wallet.balance() < amount):
 				raise Exception("Not enough money!")
 			key = sender_public
 			for utxo in self.wallet.utxos[key]:
-				sum = sum+utxo['amount']
+				sum = sum + utxo['amount']
 				inputs.append(utxo['id'])
 				if (sum >= amount):
 					break
@@ -151,13 +152,15 @@ class Node:
 			trxn.sign_transaction(self.wallet.private_key) #set id & signature
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who':trxn.receiver, 'amount': trxn.amount})
-			# print(self.validate_transaction(trxn))
+
 			if(self.validate_transaction(self.wallet.utxos,trxn) == 'validated'): # Node validates the trxn it created
 				self.add_transaction_to_validated(trxn)
+				self.rollback_trans.append(trxn)
 				self.broadcast_transaction(trxn)
 				return "Created new transaction!"
 			else:
 				return "Transaction not created,error"
+		
 		except Exception as e:
 			print(f"create_transaction: {e.__class__.__name__}: {e}")
 			return "Not enough money!"
@@ -186,6 +189,8 @@ class Node:
 						break
 				if not found:
 					#raise Exception('missing transaction inputs')
+					print('Missing transaction inputs')
+					self.add_transaction_to_pending(t)
 					return 'pending'
 			temp = []
 			if (val_amount >= t.amount):
@@ -246,7 +251,6 @@ class Node:
 	# [THREAD]	
 	def validate_block(self, block):
 		print("validate_block")
-		print('\nblock prev hash: ' + str(block.previousHash))
 		return block.previousHash == self.valid_chain.block_list[-1].hash and block.hash == block.myHash()
 
 
