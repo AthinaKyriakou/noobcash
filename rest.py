@@ -157,6 +157,7 @@ def receive_trans():
 		if(trans.id == unrec.id):
 			print("_ALREADY CONFIRMED THIS TRANSACTION_")
 			print("\t\tI GOT YOU BABE")
+			myNode.unreceived_trans = [t for t in myNode.unreceived_trans if t.id == unrec.id]
 			return # ignore received transaction
 
 	code = myNode.validate_transaction(myNode.wallet.utxos,trans)
