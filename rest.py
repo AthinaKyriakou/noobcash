@@ -89,6 +89,7 @@ def get_ring():
 	myNode.ring = newRing
 	return "OK",200
 
+
 # bootstrap handles node requests to join the ring
 # OK
 @app.route('/receive', methods=['POST'])
@@ -140,7 +141,7 @@ def print_n_return(msg, code):
 	return msg, code
 
 
-@app.route('/receive_trans',methods=['POST'])
+@app.route('/receive_trans',methods=['POST']) #TODO: remember to check the fields again
 def receive_trans():
 	print("node received a transaction")
 	data = request.get_json()
@@ -168,13 +169,18 @@ def receive_trans():
 @app.route('/receive_block', methods = ['POST'])
 def receive_block():
 	print('***node ' + str(myNode.id) + ' received a block')
-	#data = request.get_json()
-	#b = block.Block()
-	#b.previousHash = data.get('previousHash')
-	#b.timestamp = data.get('timestamp')
-	#b.nonce = data.get('nonce')
-	#b.listOfTransactions = data.get('listOfTransactions')
-	#b.blockHash = data.get('hash')
+	data = request.get_json()
+	#print(data)
+	b = block.Block(index = int(data.get('index')), previousHash = data.get('previousHash'))
+	b.timestamp = data.get('timestamp')
+	b.nonce = data.get('nonce')
+	for t in data.get('listOfTransactions'):
+		tmp = transaction.Transaction(**t)
+		b.listOfTransactions.append(tmp)
+	b.hash = data.get('hash')
+	myNode.receive_block(b)
+	return "Block received OK\n",200
+
 	#if (myNode.validate_block(b)):
 		#print("Node %s: -Block validated\n"%myNode.id)
 		#if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
@@ -185,7 +191,7 @@ def receive_block():
 		#	#myNode.valid_chain.addedBlock.clear()
 	#else:
 		#return "Error: Block rejected\n", 403
-	return "Block received OK\n",200
+
 
 # sends list of blocks as dict
 @app.route('/get_blockchain',methods=['GET'])

@@ -216,6 +216,20 @@ class Node:
 
 
 
+	def undo_transactions(self, listOfTransactions):
+		print("undo_transactions\n")
+		tmp_wallet_utxos = copy.deepcopy(self.wallet.utxos)		# undo transactions only virtually
+		# UNDO STUFF
+		#for trans in listOfTransactions:
+		for d in tmp_wallet_utxos:
+			print(d)
+			print(tmp_wallet_utxos[d])
+			print('\n')
+
+		return tmp_wallet_utxos
+
+
+
 	def add_transaction_to_pending(self, t):
 		print("add_transaction_to_pending")
 		self.pending_trans.append(t)
@@ -245,6 +259,15 @@ class Node:
 			return True				
 		else:
 			return False
+
+
+
+	def receive_block(self, block):
+		print("receive_block")
+		only_block_trans = [trans for trans in block.listOfTransactions if trans not in self.rollback_trans]
+		only_rollback_trans = [trans for trans in self.rollback_trans if trans not in block.listOfTransactions]
+		tmp_wallet_utxos = self.undo_transactions(only_rollback_trans)
+
 
 
     # [THREAD] initialize a new_block
