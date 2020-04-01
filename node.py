@@ -12,7 +12,7 @@ import threading
 import threadpool
 import time
 
-MINING_DIFFICULTY = 5
+MINING_DIFFICULTY = 4
 CAPACITY = 1		 	# run capacity = 1, 5, 10
 init_count = -1 		#initial id count, accept ids <= 10
 
@@ -32,10 +32,10 @@ class Node:
 		self.unreceived_trans = []						# list of transactions that are known because of a received block, they are not received individually
 
 
+	
 	def toURL(self,nodeID):
 		url = "http://%s:%s"%(self.ring[nodeID]['ip'],self.ring[nodeID]['port'])
 		return url
-
 
 	def broadcast(self,message, url):
 		print("broadcast")
@@ -47,22 +47,20 @@ class Node:
 				requests.post(nodeInfo+"/"+url, data = m, headers = headers)
 		return
 
-
 	def broadcast_transaction(self, trans):
 		url = "receive_trans"
 		message = copy.deepcopy(trans.__dict__) #returns attributes as keys, and their values as value
 		self.broadcast(message,url)
 		return
 
-
 	def broadcast_block(self, block):
-		print("broadcast_block")
+		print('***node ' + str(self.id) + ' broadcast_block')
 		url = "receive_block"
 		message = copy.deepcopy(block.__dict__)
 		message['listOfTransactions'] = block.listToSerialisable()
+		#print(message)
 		self.broadcast(message, url)
 		return
-
 
 	def broadcast_ring(self):
 		#print("broadcast_ring")
@@ -71,6 +69,7 @@ class Node:
 		url="connect/ring"
 		message=self.ring
 		self.broadcast(message,url)
+
 
 
 	# converts a json list of dicts to blocks 
@@ -89,6 +88,7 @@ class Node:
 		return
 
 
+
 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
 	def register_node_to_ring(self, nodeID, ip, port, public_key):
@@ -100,13 +100,14 @@ class Node:
 		else:
 			print('cannot register node')
 
-
 	# get node's id in the ring, given its key
 	def public_key_to_ring_id(self, public_key):
 		for i in self.ring:
 			d = self.ring[i]
 			if d['public_key'] == public_key:
 				return i
+
+
 
 	def create_genesis_transaction(self,num_of_nodes):
 		data={}
@@ -133,17 +134,17 @@ class Node:
 		self.wallet.utxos=init_utxos # bootstrap wallet with 100*n NBCs
 		return trans
 
-
 	def create_transaction(self, sender_public, senderID, receiver_public, receiverID, amount):
 		print("create_transaction")
 		sum = 0
 		inputs = []
+		
 		try:
 			if(self.wallet.balance() < amount):
 				raise Exception("Not enough money!")
 			key = sender_public
 			for utxo in self.wallet.utxos[key]:
-				sum = sum+utxo['amount']
+				sum = sum + utxo['amount']
 				inputs.append(utxo['id'])
 				if (sum >= amount):
 					break
@@ -151,17 +152,18 @@ class Node:
 			trxn.sign_transaction(self.wallet.private_key) #set id & signature
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who': trxn.sender, 'amount': sum-trxn.amount})
 			trxn.transaction_outputs.append({'id': trxn.id, 'to_who':trxn.receiver, 'amount': trxn.amount})
-			# print(self.validate_transaction(trxn))
+
 			if(self.validate_transaction(self.wallet.utxos,trxn) == 'validated'): # Node validates the trxn it created
 				self.add_transaction_to_validated(trxn)
+				self.add_transaction_to_rollback(trxn)
 				self.broadcast_transaction(trxn)
 				return "Created new transaction!"
 			else:
 				return "Transaction not created,error"
+		
 		except Exception as e:
 			print(f"create_transaction: {e.__class__.__name__}: {e}")
 			return "Not enough money!"
-
 
 	def validate_transaction(self,wallet_utxos, t):
 		#use of signature and NBCs balance
@@ -186,6 +188,8 @@ class Node:
 						break
 				if not found:
 					#raise Exception('missing transaction inputs')
+					print('Missing transaction inputs')
+					self.add_transaction_to_pending(t)
 					return 'pending'
 			temp = []
 			if (val_amount >= t.amount):
@@ -210,9 +214,59 @@ class Node:
 			return 'error'
 
 
+
+	def undo_transactions(self, listOfTransactions):
+		print("undo_transactions\n")
+		tmp_wallet_utxos = copy.deepcopy(self.wallet.utxos)		# undo transactions only virtually
+		# UNDO STUFF
+		#for trans in listOfTransactions:
+		for d in tmp_wallet_utxos:
+			print(d)
+			print(tmp_wallet_utxos[d])
+			print('\n')
+
+		return tmp_wallet_utxos
+
+
+
 	def add_transaction_to_pending(self, t):
 		print("add_transaction_to_pending")
 		self.pending_trans.append(t)
+
+	def add_transaction_to_rollback(self, t):
+		print("add_transaction_to_rollback")
+		self.rollback_trans.append(t)	
+
+	# comparing transaction objects
+	def remove_from_rollback(self, valid_trans):
+		print("remove_from_rollback")
+		tmp = [trans for trans in self.rollback_trans if trans not in valid_trans]
+		self.rollback_trans = tmp
+
+	# add transaction to list of valid_trans
+	# call mine if it is full
+	# return True if mining was trigerred, else False
+	def add_transaction_to_validated(self, transaction):
+		global CAPACITY
+		print("add_transaction_to_validated")
+		self.valid_trans.append(transaction)
+		if len(self.valid_trans) == CAPACITY:
+			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
+			self.valid_trans = []									# reinitialize the valid transactions list
+			future = self.pool.submit_task(self.init_mining, tmp)
+			print(str(os.getpid()) + ' assigned it to mining thread')
+			return True				
+		else:
+			return False
+
+
+
+	def receive_block(self, block):
+		print("receive_block")
+		only_block_trans = [trans for trans in block.listOfTransactions if trans not in self.rollback_trans]
+		only_rollback_trans = [trans for trans in self.rollback_trans if trans not in block.listOfTransactions]
+		tmp_wallet_utxos = self.undo_transactions(only_rollback_trans)
+
 
 
     # [THREAD] initialize a new_block
@@ -246,9 +300,7 @@ class Node:
 	# [THREAD]	
 	def validate_block(self, block):
 		print("validate_block")
-		print('\nblock prev hash: ' + str(block.previousHash))
-		return block.previousHash == self.valid_chain.block_list[-1].hash 
-		# and block.hash == block.myHash()
+		return block.previousHash == self.valid_chain.block_list[-1].hash and block.hash == block.myHash()
 
 
 	# [THREAD] create block and call mine
@@ -259,35 +311,15 @@ class Node:
 		self.mine_block(newBlock)
 		# ----- LOCK ----------
 		if self.validate_block(newBlock):
+			print('***Mined block valida will be broadcasted')
 			self.valid_chain.add_block(newBlock)
 			self.remove_from_rollback(valid_trans)
 		# ----- UNLOCK --------
 			self.broadcast_block(newBlock)
+		else:
+			print('***Mined block invalida will not be broadcasted')
 		return
 
-
-	# comparing transaction objects
-	def remove_from_rollback(self, valid_trans):
-		print("remove_from_rollback")
-		tmp = [trans for trans in self.rollback_trans if trans not in valid_trans]
-		self.rollback_trans = tmp
-
-
-	# add transaction to list of valid_trans
-	# call mine if it is full
-	# return True if mining was trigerred, else False
-	def add_transaction_to_validated(self, transaction):
-		global CAPACITY
-		print("add_transaction_to_validated")
-		self.valid_trans.append(transaction)
-		if len(self.valid_trans) == CAPACITY:
-			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
-			self.valid_trans = []									# reinitialize the valid transactions list
-			future = self.pool.submit_task(self.init_mining, tmp)
-			print(str(os.getpid()) + ' assigned it to mining thread')
-			return True				
-		else:
-			return False
 
 	#Consensus functions
 

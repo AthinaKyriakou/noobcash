@@ -15,14 +15,14 @@ class Block:
 		self.listOfTransactions=[]
 		self.hash = None
 
-	def listToSerialisable(self):
+	def listToSerialisable(self):	#TODO: check where it is used
 		#print("listToSerialisable")
 		final = []
 		for trans in self.listOfTransactions:
 			final.append(trans.__dict__)
 		return final
 
-	def myHash(self):
+	def myHash(self): #FIX
 		hash_data = OrderedDict([('index',self.index),('prev',self.previousHash),('tmsp',self.timestamp), ('nonce',self.nonce),('transactions',self.listToSerialisable())])
 		tmp = json.dumps(hash_data)
 		return SHA256.new(tmp.encode()).hexdigest()
