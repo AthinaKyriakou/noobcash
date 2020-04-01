@@ -238,7 +238,7 @@ class Node:
 		if len(self.valid_trans) == CAPACITY:
 			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
 			self.valid_trans = []									# reinitialize the valid transactions list
-			future = self.pool.submit_task(self.init_mining, tmp)
+			future = self.pool.submit_task(self.init_mining, tmp, copy.deepcopy(self.wallet.utxos))
 			print(str(os.getpid()) + ' assigned it to mining thread')
 			return True				
 		else:
@@ -269,6 +269,8 @@ class Node:
 				# update validated trans
 				new_valid = [trans for trans in self.valid_trans if trans not in block.listOfTransactions]
 				self.valid_trans = new_valid
+				self.wallet.utxos_snapshot = copy.deepcopy(tmp_utxos)
+				self.wallet.utxos = copy.deepcopy(tmp_utxos)
 			
 			else:
 				self.resolve_conflict()
@@ -313,7 +315,7 @@ class Node:
 
 
 	# [THREAD] create block and call mine
-	def init_mining(self, valid_trans):
+	def init_mining(self, valid_trans, current_utxos):
 		print("init_miner")
 		print('Task Executed {}'.format(threading.current_thread()))
 		newBlock = self.create_new_block(valid_trans)
@@ -322,7 +324,7 @@ class Node:
 		if self.validate_block(newBlock):
 			print('***Mined block valida will be broadcasted')
 			self.valid_chain.add_block(newBlock, self.wallet.utxos_snapshot, self.wallet.utxos)
-			self.wallet.utxos_snapshot = copy.deepcopy(self.wallet.utxos)
+			self.wallet.utxos_snapshot = current_utxos
 			self.remove_from_rollback(valid_trans)
 		# ----- UNLOCK --------
 			self.broadcast_block(newBlock)
