@@ -215,17 +215,17 @@ class Node:
 
 
 
-	def undo_transactions(self, listOfTransactions):
-		print("undo_transactions\n")
-		tmp_wallet_utxos = copy.deepcopy(self.wallet.utxos)		# undo transactions only virtually
-		# UNDO STUFF
-		#for trans in listOfTransactions:
-		for d in tmp_wallet_utxos:
-			print(d)
-			print(tmp_wallet_utxos[d])
-			print('\n')
+	# def undo_transactions(self, listOfTransactions):
+	# 	print("undo_transactions\n")
+	# 	tmp_wallet_utxos = copy.deepcopy(self.wallet.utxos)		# undo transactions only virtually
+	# 	# UNDO STUFF
+	# 	#for trans in listOfTransactions:
+	# 	for d in tmp_wallet_utxos:
+	# 		print(d)
+	# 		print(tmp_wallet_utxos[d])
+	# 		print('\n')
 
-		return tmp_wallet_utxos
+	# 	return tmp_wallet_utxos
 
 
 
@@ -263,9 +263,14 @@ class Node:
 
 	def receive_block(self, block):
 		print("receive_block")
-		only_block_trans = [trans for trans in block.listOfTransactions if trans not in self.rollback_trans]
-		only_rollback_trans = [trans for trans in self.rollback_trans if trans not in block.listOfTransactions]
-		tmp_wallet_utxos = self.undo_transactions(only_rollback_trans)
+		only_block_trans = block.listOfTransactions
+		# only_block_trans = [trans for trans in block.listOfTransactions if trans not in self.rollback_trans]
+		# only_rollback_trans = [trans for trans in self.rollback_trans if trans not in block.listOfTransactions]
+		# tmp_wallet_utxos = self.undo_transactions(only_rollback_trans)
+		tmp_wallet_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
+		print("__MY TEMP UTXOS__")
+		print(tmp_wallet_utxos)
+		# if valid:  add_block(block, self.wallet.utxos_snapshot, tmp_wallet_utxos)
 
 
 
@@ -312,7 +317,7 @@ class Node:
 		# ----- LOCK ----------
 		if self.validate_block(newBlock):
 			print('***Mined block valida will be broadcasted')
-			self.valid_chain.add_block(newBlock)
+			self.valid_chain.add_block(newBlock, self.wallet.utxos_snapshot, self.wallet.utxos)
 			self.remove_from_rollback(valid_trans)
 		# ----- UNLOCK --------
 			self.broadcast_block(newBlock)
@@ -326,7 +331,7 @@ class Node:
 	def block_REDO(self,block,utxos):
 		# REDO all transaction in block
 		for trans in block.listOfTransactions:
-			if(not self.validate_transasction(utxos,trans)):
+			if(self.validate_transasction(utxos,trans)=='pending'):
 				return False
 		return True
 
@@ -424,7 +429,7 @@ class Node:
 					raise Exception('received invalid chain')
 			
 			# Validate all transactions in confirmed blockchain
-			self.wallet.utxos=new_utxos
+			self.wallet.utxos = self.wallet.utxos_snapshot = new_utxos
 			self.valid_chain = new_blockchain
 			print("__Conflict resolved successfully!__")
 			print("__________SO SALLY CAN WAIT__________")
