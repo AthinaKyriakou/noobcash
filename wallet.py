@@ -21,7 +21,7 @@ class Wallet:
 		rsa_key = RSA.generate(1024)
 		self.private_key = rsa_key.exportKey('PEM').decode()
 		self.public_key = rsa_key.publickey().exportKey('PEM').decode()
-		self.utxos= utxos
+		self.utxos= utxos #key : public key, value: {id, to_who, amount}
 		#self.transactions
 
 	def balance(self):
