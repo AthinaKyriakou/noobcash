@@ -50,7 +50,7 @@ class Node:
 
 	def broadcast_transaction(self, trans):
 		url = "receive_trans"
-		message = trans.__dict__ #returns attributes as keys, and their values as value
+		message = copy.deepcopy(trans.__dict__) #returns attributes as keys, and their values as value
 		self.broadcast(message,url)
 		return
 
@@ -58,7 +58,7 @@ class Node:
 	def broadcast_block(self, block):
 		print("broadcast_block")
 		url = "receive_block"
-		message = block.__dict__
+		message = copy.deepcopy(block.__dict__)
 		message['listOfTransactions'] = block.listToSerialisable()
 		self.broadcast(message, url)
 		return
@@ -247,7 +247,8 @@ class Node:
 	def validate_block(self, block):
 		print("validate_block")
 		print('\nblock prev hash: ' + str(block.previousHash))
-		return block.previousHash == self.valid_chain.block_list[-1].hash and block.hash == block.myHash()
+		return block.previousHash == self.valid_chain.block_list[-1].hash 
+		# and block.hash == block.myHash()
 
 
 	# [THREAD] create block and call mine
@@ -261,7 +262,7 @@ class Node:
 			self.valid_chain.add_block(newBlock)
 			self.remove_from_rollback(valid_trans)
 		# ----- UNLOCK --------
-			#self.broadcast_block(newBlock)
+			self.broadcast_block(newBlock)
 		return
 
 
@@ -290,29 +291,61 @@ class Node:
 
 	#Consensus functions
 
-	def chain_REDO(self,chain):
-		tmp_utxos = {}
+	def block_REDO(self,block,utxos):
+		# REDO all transaction in block
+		for trans in block.listOfTransactions:
+			if(not self.validate_transasction(utxos,trans)):
+				return False
+		return True
 
+	# return difference of two sets, Si-Sj and Sj-Si
+	def	create_sets(Si,Sj):
+		return list(set(Si-Sj)), list(set(Sj-Si))
+
+	# validates and returns list of block objects
+	def validate_chain(self, blocklist):
+		print("__validate chain__")
+		print("__________I CAN STILL HEAR YOU SAYING__________")
+		
+		chain = []
+		# initialize pending and unreceived transactions
+		pending = copy.deepcopy(self.pending_trans) # we will use these lists just for validation and
+		valid = copy.deepcopy(self.valid_trans)
+		pending += valid
+		unreceived = copy.deepcopy(self.unreceived_trans)	# then we will add them to node's lists
+		tmp_utxos = {}
 		# REDO bootstrap's utxos which are not validated
 		btstrp_public_k = self.ring[0]['public_key']
 		amount = len(self.ring.keys())*100 # number of nodes * 100 NBCs
 		tmp_utxos[btstrp_public_k] = [{"id":0,"to_who":btstrp_public_k,"amount":amount}]
 
-		# REDO all transaction except genesis transaction
-		for b in chain[1:]:
-			for trans in b.listOfTransactions:
-				if(not self.validate_transasction(tmp_utxos,trans)):
-					return False
-		return tmp_utxos
+		self.add_block_list_to_chain(chain,blocklist) # to convert dictionaries to block Objects
+		# i is our old block, j the block from new blockchain
+		for i, j in zip(self.valid_chain.block_list[1:], chain[1:]):
+			if (not self.validate_block(j)):
+				print("Chain invalid!")
+				return False
+			old_trans = i.transactions
+			new_trans = j.transactions
+			A, B = create_sets(old_trans, new_trans)
+			# if pending transactions in new block, remove them, and add pending from i
+			tmp_pending = create_sets(pending, B)[0] + create_sets(A, unreceived)[0]
+			# if unreceived transactions in i, remove them, and add unreceived from j
+			tmp_unreceived = create_sets(unreceived, A)[0] + create_sets(B, pending)[0]
+			# REDO block and check its validity
+			if( not block_REDO(j,tmp_utxos)):
+				print("Chain invalid!")
+				return False
 
-	# validates and returns list of block objects
-	def validate_chain(self, blocklist):
-		chain = []
-		self.add_block_list_to_chain(chain,blocklist)
-		for b in chain:
-			if (not self.validate_block(b)):
-				return "unconfirmed list" ,False
-		return chain, True
+			pending = tmp_pendingss
+			unreceived = tmp_unreceived
+
+		# validation successfull
+		self.pending_trans = pending
+		self.unreceived_trans = unreceived
+
+		return True, chain, tmp_utxos
+
 
 	def resolve_conflict(self):
 		#resolve correct chain
@@ -322,6 +355,9 @@ class Node:
 		max_ip= self.ring[max_id]['ip']
 		max_port= self.ring[max_id]['port']
 		#check if someone has longer block chain
+		print("_____my block hashes are_____")
+		for b in self.valid_chain.block_list:
+			print(b.hash,"->")
 		try:
 			for key in self.ring:
 				node=self.ring[key]
@@ -351,13 +387,14 @@ class Node:
 			if response.status_code != 200:
 				raise Exception('Invalid blockchain response')
 			received_blocklist = response.json()['blockchain']
-			new_blockchain ,valid = self.validate_chain(received_blocklist)
+			valid, new_blockchain, new_utxos = self.validate_chain(received_blocklist)
 			if not valid:
 					raise Exception('received invalid chain')
 			
 			# Validate all transactions in confirmed blockchain
-			self.wallet.utxos=self.chain_REDO(new_blockchain)
+			self.wallet.utxos=new_utxos
 			self.valid_chain = new_blockchain
-
+			print("__Conflict resolved successfully!__")
+			print("__________SO SALLY CAN WAIT__________")
 		except Exception as e:
 			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')
