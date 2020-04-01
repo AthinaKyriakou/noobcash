@@ -3,6 +3,7 @@ import datetime;
 from collections import OrderedDict
 from Crypto.Hash import SHA256
 import json
+import copy
 
 class Block:
 	def __init__(self, index = -1, previousHash = None):
@@ -19,7 +20,8 @@ class Block:
 		#print("listToSerialisable")
 		final = []
 		for trans in self.listOfTransactions:
-			final.append(trans.__dict__)
+			tmp = copy.deepcopy(trans.__dict__)
+			final.append(tmp)
 		return final
 
 	def myHash(self): #FIX
