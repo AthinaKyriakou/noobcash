@@ -22,7 +22,8 @@ class Wallet:
 		self.private_key = rsa_key.exportKey('PEM').decode()
 		self.public_key = rsa_key.publickey().exportKey('PEM').decode()
 		self.utxos= utxos #key : public key, value: {id, to_who, amount}
-		#self.transactions
+		self.utxos_snapshot = {} # we will use it to validate any received block
+
 
 	def balance(self):
 		print("balance")
