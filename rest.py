@@ -152,19 +152,22 @@ def receive_trans():
 	data = request.get_json()
 	trans = transaction.Transaction(**data)
 
-	# check if transaction is already confirmed
+	# check if transaction is already received & remove it from unreceived
 	for unrec in myNode.unreceived_trans:
 		if(trans.id == unrec.id):
 			print("_ALREADY CONFIRMED THIS TRANSACTION_")
 			print("\t\tI GOT YOU BABE")
 			return # ignore received transaction
 
-	code = myNode.validate_transaction(myNode.wallet.utxos,trans) # added or error
+	code = myNode.validate_transaction(myNode.wallet.utxos,trans)
 	
-	if (code =='validated'):
+	if (code == 'validated'):
 		print('VIVA LA TRANSACTION VALIDA %s to %s!' %(data.get('senderID'), data.get('receiverID')))
 		isBlockMined = myNode.add_transaction_to_validated(trans)
 		myNode.add_transaction_to_rollback(trans)
+
+		# check if with updated utxos, pending transactions can be validated
+		myNode.validate_pending()
 		
 		if (isBlockMined):
 			return print_n_return('Valid transaction added to block, mining block OK\n', 200)

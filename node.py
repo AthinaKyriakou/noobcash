@@ -214,6 +214,16 @@ class Node:
 			return 'error'
 
 
+	# check if any of the pending transactions can be validated
+	# if it can be validated, remove it from pending and added to validated
+	def validate_pending():
+		print("validate_pending")
+		for t in self.pending_trans:
+			if validate_transaction(self.wallet.utxos, t) == 'validated':
+				self.pending_trans.remove(t)
+				self.add_transaction_to_validated(t)
+
+
 	def add_transaction_to_pending(self, t):
 		print("add_transaction_to_pending")
 		self.pending_trans.append(t)
@@ -261,8 +271,8 @@ class Node:
 				new_pending = [trans for trans in self.pending_trans if trans not in block.listOfTransactions]
 				self.pending_trans = new_pending
 
-				# add to my unreceived (?)
-				new_unreceived = [trans for trans in block.listOfTransactions if trans not in self.valid_trans]
+				# add to my unreceived
+				new_unreceived = [trans for trans in block.listOfTransactions if trans not in (self.valid_trans and self.pending_trans)]
 				for t in new_unreceived:
 					self.unreceived_trans.append(t)
 				

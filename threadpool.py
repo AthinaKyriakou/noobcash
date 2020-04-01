@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 # pool of threads (use for mining, broadcast, etc)
 class Threadpool:
 
-	def __init__(self, NUM_OF_THREADS = 2):
+	def __init__(self, NUM_OF_THREADS = 1):
 		print("threadpool_init")
 		self.executor = ThreadPoolExecutor(NUM_OF_THREADS)
 
