@@ -16,7 +16,7 @@ import wallet
 app = Flask(__name__)
 CORS(app)
 
-PORT = '5005' # specify your port here in string format
+PORT = '5000' # specify your port here in string format
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
@@ -145,6 +145,13 @@ def receive_trans():
 	print("node received a transaction")
 	data = request.get_json()
 	trans = transaction.Transaction(**data)
+
+	# check if transaction is already confirmed
+	for unrec in myNode.unreceived_trans:
+		if(trans.id == unrec.id):
+			print("_ALREADY CONFIRMED THIS TRANSACTION_")
+			return # ignore received transaction
+
 	code = myNode.validate_transaction(myNode.wallet.utxos,trans) # added or error
 	
 	if (code =='validated'):
@@ -167,13 +174,16 @@ def receive_trans():
 
 @app.route('/receive_block', methods = ['POST'])
 def receive_block():
-	print("node received a block")
+	print("______node received a block________")
 	data = request.get_json()
 	b = block.Block()
 	b.previousHash = data.get('previousHash')
 	b.timestamp = data.get('timestamp')
 	b.nonce = data.get('nonce')
-	b.listOfTransactions = data.get('listOfTransactions')
+	listOfTransactions = data.get('listOfTransactions')
+	for t in listOfTransactions:
+		trxn = transaction.Transaction(**t)
+		b.listOfTransactions.append(trxn)
 	b.blockHash = data.get('hash')
 	if (myNode.validate_block(b)):
 		print("Node %s: -Block validated\n"%myNode.id)
@@ -182,6 +192,7 @@ def receive_block():
 			#myNode.valid_chain.is_first_received_block(b)
 	else:
 		print("Node %s: -Block not validated\n"%myNode.id)
+		# myNode.resolve_conflict()
 			#myNode.valid_chain.addedBlock.clear()
 	#else:
 		#return "Error: Block rejected\n", 403
@@ -192,7 +203,11 @@ def receive_block():
 def get_blockchain():
 	message = {}
 	blocks = []
+	print("__SENDING CHAIN CHAIN CHAIIIN:__")
+	print("________________________________")
 	for block in myNode.valid_chain.block_list:
+		print("__BLOCK HASH__")
+		print(block.hash)
 		tmp=copy.deepcopy(block.__dict__)
 		tmp['listOfTransactions']=block.listToSerialisable()
 		blocks.append(tmp)
@@ -202,7 +217,8 @@ def get_blockchain():
 @app.route('/chain_length',methods=['GET'])
 def get_chain_length():
 	message = {}
-	message['length']= len(myNode.valid_chain.block_list)
+	# message['length']= len(myNode.valid_chain.block_list)
+	message['length']=3
 	return json.dumps(message), 200
 
 
