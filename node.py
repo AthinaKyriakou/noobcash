@@ -94,8 +94,8 @@ class Node:
 	def register_node_to_ring(self, nodeID, ip, port, public_key):
 		if self.id == 0:
 			self.ring[nodeID] = {'ip': ip,'port': port,'public_key': public_key}
-			if(self.id!=nodeID):
-				self.wallet.utxos[public_key]=[] # initialize utxos of other nodes
+			if(self.id != nodeID):
+				self.wallet.utxos[public_key] = [] # initialize utxos of other nodes
 			print('register_node')
 		else:
 			print('cannot register node')
@@ -187,9 +187,7 @@ class Node:
 						sender_utxos.remove(utxo)
 						break
 				if not found:
-					#raise Exception('missing transaction inputs')
 					print('Missing transaction inputs')
-					self.add_transaction_to_pending(t)
 					return 'pending'
 			temp = []
 			if (val_amount >= t.amount):
@@ -213,17 +211,15 @@ class Node:
 			print(f"validate transaction: {e.__class__.__name__}: {e}")
 			return 'error'
 
-
-
 	# def undo_transactions(self, listOfTransactions):
 	# 	print("undo_transactions\n")
-	# 	tmp_wallet_utxos = copy.deepcopy(self.wallet.utxos)		# undo transactions only virtually
-	# 	# UNDO STUFF
-	# 	#for trans in listOfTransactions:
-	# 	for d in tmp_wallet_utxos:
-	# 		print(d)
-	# 		print(tmp_wallet_utxos[d])
-	# 		print('\n')
+	# 	tmp_utxos = copy.deepcopy(self.wallet.utxos)		# undo transactions only virtually
+		# UNDO STUFF
+		#for trans in listOfTransactions:
+		#for d in tmp_wallet_utxos:
+		#	print(d)
+		#	print(tmp_wallet_utxos[d])
+		#	print('\n')
 
 	# 	return tmp_wallet_utxos
 
@@ -271,6 +267,7 @@ class Node:
 		print("__MY TEMP UTXOS__")
 		print(tmp_wallet_utxos)
 		# if valid:  add_block(block, self.wallet.utxos_snapshot, tmp_wallet_utxos)
+		are_block_trans_valid = self.block_REDO(block, tmp_utxos)
 
 
 
@@ -282,7 +279,7 @@ class Node:
 			idx = 0		# TODO: handle the bug properly
 			prevHash = 0
 		else:
-			prevBlock = self.valid_chain.block_list[-1]
+			prevBlock = copy.deepcopy(self.valid_chain.block_list[-1])
 			idx = prevBlock.index + 1
 			prevHash = prevBlock.hash
 		newBlock = block.Block(index = idx, previousHash = prevHash)
@@ -328,7 +325,7 @@ class Node:
 
 	#Consensus functions
 
-	def block_REDO(self,block,utxos):
+	def block_REDO(self, block, utxos):
 		# REDO all transaction in block
 		for trans in block.listOfTransactions:
 			if(self.validate_transasction(utxos,trans)=='pending'):
