@@ -39,10 +39,9 @@ class Blockchain:
 
 
 	# add to chain 
-	def add_block(self, new_block, utxos_snapshot, updated_utxos):
+	def add_block(self, new_block):
 		print("add_block")
 		self.block_list.append(new_block)
-		utxos_snapshot = copy.deepcopy(updated_utxos)
 		self.print_chain()		# prob when used in genesis(transaction), others (dict)
 		print('length: \t' + str(len(self.block_list)))
 

@@ -94,8 +94,8 @@ class Node:
 	def register_node_to_ring(self, nodeID, ip, port, public_key):
 		if self.id == 0:
 			self.ring[nodeID] = {'ip': ip,'port': port,'public_key': public_key}
-			if(self.id != nodeID):
-				self.wallet.utxos[public_key] = [] # initialize utxos of other nodes
+			if(self.id!=nodeID):
+				self.wallet.utxos[public_key]=[] # initialize utxos of other nodes
 			print('register_node')
 		else:
 			print('cannot register node')
@@ -187,7 +187,9 @@ class Node:
 						sender_utxos.remove(utxo)
 						break
 				if not found:
+					#raise Exception('missing transaction inputs')
 					print('Missing transaction inputs')
+					self.add_transaction_to_pending(t)
 					return 'pending'
 			temp = []
 			if (val_amount >= t.amount):
@@ -210,19 +212,6 @@ class Node:
 		except Exception as e:
 			print(f"validate transaction: {e.__class__.__name__}: {e}")
 			return 'error'
-
-	# def undo_transactions(self, listOfTransactions):
-	# 	print("undo_transactions\n")
-	# 	tmp_utxos = copy.deepcopy(self.wallet.utxos)		# undo transactions only virtually
-		# UNDO STUFF
-		#for trans in listOfTransactions:
-		#for d in tmp_wallet_utxos:
-		#	print(d)
-		#	print(tmp_wallet_utxos[d])
-		#	print('\n')
-
-	# 	return tmp_wallet_utxos
-
 
 
 	def add_transaction_to_pending(self, t):
@@ -256,18 +245,21 @@ class Node:
 			return False
 
 
-
 	def receive_block(self, block):
 		print("receive_block")
 		only_block_trans = block.listOfTransactions
-		# only_block_trans = [trans for trans in block.listOfTransactions if trans not in self.rollback_trans]
-		# only_rollback_trans = [trans for trans in self.rollback_trans if trans not in block.listOfTransactions]
-		# tmp_wallet_utxos = self.undo_transactions(only_rollback_trans)
-		tmp_wallet_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
-		print("__MY TEMP UTXOS__")
-		print(tmp_wallet_utxos)
+		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
+		if self.block_REDO(block, tmp_utxos):
+			if self.validate_block(block):
+				print("___VALID BLOCK RECEIVED___")
+				self.valid_chain.add_block(block, self.wallet.utxos_snapshot, tmp_utxos)
+				self.wallet.utxos_snapshot = copy.deepcopy(tmp_utxos)
+			else:
+				self.resolve_conflict()
+		else:
+			print("__BLOCK REDO FAILED__")
+			self.resolve_conflict()
 		# if valid:  add_block(block, self.wallet.utxos_snapshot, tmp_wallet_utxos)
-		are_block_trans_valid = self.block_REDO(block, tmp_utxos)
 
 
 
@@ -279,7 +271,7 @@ class Node:
 			idx = 0		# TODO: handle the bug properly
 			prevHash = 0
 		else:
-			prevBlock = copy.deepcopy(self.valid_chain.block_list[-1])
+			prevBlock = self.valid_chain.block_list[-1]
 			idx = prevBlock.index + 1
 			prevHash = prevBlock.hash
 		newBlock = block.Block(index = idx, previousHash = prevHash)
@@ -315,6 +307,7 @@ class Node:
 		if self.validate_block(newBlock):
 			print('***Mined block valida will be broadcasted')
 			self.valid_chain.add_block(newBlock, self.wallet.utxos_snapshot, self.wallet.utxos)
+			self.wallet.utxos_snapshot = copy.deepcopy(self.wallet.utxos)
 			self.remove_from_rollback(valid_trans)
 		# ----- UNLOCK --------
 			self.broadcast_block(newBlock)
@@ -325,16 +318,22 @@ class Node:
 
 	#Consensus functions
 
-	def block_REDO(self, block, utxos):
+	def block_REDO(self,block,utxos):
 		# REDO all transaction in block
+		print("__BLOCK_REDO__")
 		for trans in block.listOfTransactions:
-			if(self.validate_transasction(utxos,trans)=='pending'):
+			if(self.validate_transaction(utxos, trans) != 'validated'):
 				return False
 		return True
 
-	# return difference of two sets, Si-Sj and Sj-Si
-	def	create_sets(Si,Sj):
-		return list(set(Si-Sj)), list(set(Sj-Si))
+	# validate chain's hashes
+	def chain_hashes_validation(self,chain):
+		prev_hash = chain[0].hash
+		for b in chain[1:]:
+			if(b.previousHash != prev_hash or b.hash != b.myHash()):
+				return False
+			prev_hash = b.hash
+		return True
 
 	# validates and returns list of block objects
 	def validate_chain(self, blocklist):
@@ -354,29 +353,39 @@ class Node:
 		tmp_utxos[btstrp_public_k] = [{"id":0,"to_who":btstrp_public_k,"amount":amount}]
 
 		self.add_block_list_to_chain(chain,blocklist) # to convert dictionaries to block Objects
+
+		if not self.chain_hashes_validation(chain):
+			print("CHAIN HAS INVALID HASHES")
+			return False
+
 		# i is our old block, j the block from new blockchain
 		for i, j in zip(self.valid_chain.block_list[1:], chain[1:]):
-			if (not self.validate_block(j)):
-				print("Chain invalid!")
-				return False
-			old_trans = i.transactions
-			new_trans = j.transactions
-			A, B = create_sets(old_trans, new_trans)
+			print("CHECKING HASHES:::::")
+			print(i.hash)
+			print("~~~~~~~~~~~~~")
+			print(j.hash)
+			old_trans = i.listOfTransactions
+			new_trans = j.listOfTransactions
+			A = [t for t in old_trans if t not in new_trans]
+			B = [t for t in new_trans if t not in old_trans]
 			# if pending transactions in new block, remove them, and add pending from i
-			tmp_pending = create_sets(pending, B)[0] + create_sets(A, unreceived)[0]
+			tmp_pending = [t for t in pending if t not in B] + [t for t in A if t not in unreceived]
 			# if unreceived transactions in i, remove them, and add unreceived from j
-			tmp_unreceived = create_sets(unreceived, A)[0] + create_sets(B, pending)[0]
+			tmp_unreceived = [t for t in unreceived if t not in A] + [t for t in B if t not in pending]
+
 			# REDO block and check its validity
-			if( not block_REDO(j,tmp_utxos)):
+			if( not self.block_REDO(j,tmp_utxos)):
 				print("Chain invalid!")
 				return False
 
-			pending = tmp_pendingss
+			pending = tmp_pending
 			unreceived = tmp_unreceived
 
 		# validation successfull
-		self.pending_trans = pending
-		self.unreceived_trans = unreceived
+		self.pending_trans = copy.deepcopy(pending)
+		self.unreceived_trans = copy.deepcopy(unreceived)
+		print(self.pending_trans)
+		print(self.unreceived_trans)
 
 		return True, chain, tmp_utxos
 
@@ -426,8 +435,9 @@ class Node:
 					raise Exception('received invalid chain')
 			
 			# Validate all transactions in confirmed blockchain
-			self.wallet.utxos = self.wallet.utxos_snapshot = new_utxos
-			self.valid_chain = new_blockchain
+			self.wallet.utxos = copy.deepcopy(new_utxos)
+			self.wallet.utxos_snapshot = copy.deepcopy(new_utxos)
+			self.valid_chain.block_list = new_blockchain
 			print("__Conflict resolved successfully!__")
 			print("__________SO SALLY CAN WAIT__________")
 		except Exception as e:

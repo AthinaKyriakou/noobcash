@@ -16,7 +16,7 @@ import wallet
 app = Flask(__name__)
 CORS(app)
 
-PORT = '5005' # specify your port here in string format
+PORT = '5000' # specify your port here in string format
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
@@ -66,11 +66,13 @@ def connect_node_request(myIP,port):
 		current_chain = data.get('chain')
 		current_utxos = data.get('utxos')
 		myNode.id = potentialID
+		myNode.wallet.utxos = copy.deepcopy(current_utxos)
+		myNode.wallet.utxos_snapshot = copy.deepcopy(current_utxos)
 		myNode.add_block_list_to_chain(myNode.valid_chain.block_list, current_chain)
-		myNode.wallet.utxos = current_utxos
 		message={}
 		message['public_key']=myNode.wallet.public_key
 		message['flag']=1 # if request success and transaction is due
+
 		response = requests.post(btsrp_url + "/receive", data = json.dumps(message), headers = headers)
 		return "Connection for IP: " + myIP + " established,\nOK\n",200
 	else:
@@ -188,17 +190,6 @@ def receive_block():
 	myNode.receive_block(b)
 	return "Block received OK\n",200
 
-	#if (myNode.validate_block(b)):
-		#print("Node %s: -Block validated\n"%myNode.id)
-		#if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
-			#myNode.valid_chain.addedBlock.set()
-			#myNode.valid_chain.is_first_received_block(b)
-	#else:
-		#print("Node %s: -Block not validated\n"%myNode.id)
-		#	#myNode.valid_chain.addedBlock.clear()
-	#else:
-		#return "Error: Block rejected\n", 403
-
 
 # sends list of blocks as dict
 @app.route('/get_blockchain',methods=['GET'])
@@ -219,8 +210,7 @@ def get_blockchain():
 @app.route('/chain_length',methods=['GET'])
 def get_chain_length():
 	message = {}
-	# message['length']= len(myNode.valid_chain.block_list)
-	message['length']=3
+	message['length']= len(myNode.valid_chain.block_list)
 	return json.dumps(message), 200
 
 
