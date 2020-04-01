@@ -36,6 +36,7 @@ def init_connection(total_nodes):
 	global TOTAL_NODES
 	global PORT
 	TOTAL_NODES = int(total_nodes)
+	print("__________MR BLUE SKY PLEASE TELL US WHY YOU HAD TO HIDE AWAY FOR SO LONG__________")
 	print('App starting for ' + str(TOTAL_NODES) + ' nodes')
 	genesis_trans = myNode.create_genesis_transaction(TOTAL_NODES)
 	myNode.valid_chain.create_blockchain(genesis_trans) # also creates genesis block
@@ -61,7 +62,9 @@ def connect_node_request(myIP,port):
 	data = response.json() # dictionary containing id + chain
 	error = 'error' in data.keys()
 	if (not error) :
-		print("____CONNECTED____")	
+		print('____CONNECTED____')
+		print('HEY YOU WITH THE PRETTY FACE')
+		print('\t\t\tWELCOME TO THE HUMAN RACE')
 		potentialID = int(data.get('id'))
 		current_chain = data.get('chain')
 		current_utxos = data.get('utxos')

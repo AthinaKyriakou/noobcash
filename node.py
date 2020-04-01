@@ -165,8 +165,8 @@ class Node:
 			print(f"create_transaction: {e.__class__.__name__}: {e}")
 			return "Not enough money!"
 
-	def validate_transaction(self,wallet_utxos, t):
-		#use of signature and NBCs balance
+	# does not change lists of validated or pending transactions, only returns code
+	def validate_transaction(self, wallet_utxos, t): 
 		print("validate_transaction")
 		try:
 			# verify signature
@@ -212,21 +212,6 @@ class Node:
 			return 'error'
 
 
-
-	def undo_transactions(self, listOfTransactions):
-		print("undo_transactions\n")
-		tmp_utxos = copy.deepcopy(self.wallet.utxos)		# undo transactions only virtually
-		# UNDO STUFF
-		#for trans in listOfTransactions:
-		#for d in tmp_wallet_utxos:
-		#	print(d)
-		#	print(tmp_wallet_utxos[d])
-		#	print('\n')
-
-		return tmp_wallet_utxos
-
-
-
 	def add_transaction_to_pending(self, t):
 		print("add_transaction_to_pending")
 		self.pending_trans.append(t)
@@ -261,15 +246,13 @@ class Node:
 
 	def receive_block(self, block):
 		print("receive_block")
-		only_block_trans = [trans for trans in block.listOfTransactions if trans not in self.rollback_trans]
-		only_rollback_trans = [trans for trans in self.rollback_trans if trans not in block.listOfTransactions]
-		
-		# undo the transactions that are only in node's rollback list
-		# and do the node transactions
-		tmp_utxos = self.undo_transactions(only_rollback_trans)
-		are_block_trans_valid = self.block_REDO(block, tmp_utxos)
-
-
+		tmp_utxos = {} #replace with deep copy of copy
+		if self.block_REDO(block, tmp_utxos):
+			if self.validate_block(block):
+				#add block to chain
+				#changes in lists
+			else:
+				self.resolve_conflict()
 
 
     # [THREAD] initialize a new_block
@@ -326,10 +309,10 @@ class Node:
 
 	#Consensus functions
 
+	# redo all the transactions in a block
 	def block_REDO(self, block, utxos):
-		# REDO all transaction in block
 		for trans in block.listOfTransactions:
-			if(not self.validate_transasction(utxos,trans)):
+			if (self.validate_transaction(utxos, trans) != 'validated'):
 				return False
 		return True
 
@@ -385,6 +368,8 @@ class Node:
 	def resolve_conflict(self):
 		#resolve correct chain
 		print("resolve_conflicts")
+		print('IMAGINE ALL THE PEOPLE')
+		print('\t\t\tLIVING LIFE IN PEACE')
 		max_length = len(self.valid_chain.block_list)
 		max_id = self.id
 		max_ip= self.ring[max_id]['ip']
