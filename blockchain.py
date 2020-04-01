@@ -9,6 +9,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 import node
 import block
+import copy
 import transaction
 import requests
 from flask import Flask, jsonify, request, render_template
@@ -38,9 +39,10 @@ class Blockchain:
 
 
 	# add to chain 
-	def add_block(self, new_block):
+	def add_block(self, new_block, utxos_snapshot, updated_utxos):
 		print("add_block")
 		self.block_list.append(new_block)
-		self.print_chain()		# prob when used in genesis(transaction), others (dict)
+		utxos_snapshot = copy.deepcopy(updated_utxos)
+		self.print_chain()
 		print('length: \t' + str(len(self.block_list)))
 

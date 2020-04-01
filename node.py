@@ -246,13 +246,31 @@ class Node:
 
 	def receive_block(self, block):
 		print("receive_block")
-		tmp_utxos = {} #replace with deep copy of copy
+		#only_block_trans = [trans for trans in block.listOfTransactions if trans not in self.rollback_trans]
+		#only_rollback_trans = [trans for trans in self.rollback_trans if trans not in block.listOfTransactions]
+		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
 		if self.block_REDO(block, tmp_utxos):
 			if self.validate_block(block):
-				#add block to chain
-				#changes in lists
+				self.valid_chain.add_block(block, self.wallet.utxos_snapshot, tmp_utxos)
+				
+				# UPDATE LISTS
+
+				# delete from my pending what was in block
+				new_pending = [trans for trans in self.pending_trans if trans not in block.listOfTransactions]
+				self.pending_trans = new_pending
+
+				# add to my unreceived (?)
+				new_unreceived = [trans for trans in block.listOfTransactions if trans not in self.valid_trans]
+				for t in new_unreceived:
+					self.unreceived_trans.append(t)
+				
+				# update validated trans
+				new_valid = [trans for trans in self.valid_trans if trans not in block.listOfTransactions]
+				self.valid_trans = new_valid
+			
 			else:
 				self.resolve_conflict()
+
 
 
     # [THREAD] initialize a new_block
@@ -298,7 +316,7 @@ class Node:
 		# ----- LOCK ----------
 		if self.validate_block(newBlock):
 			print('***Mined block valida will be broadcasted')
-			self.valid_chain.add_block(newBlock)
+			self.valid_chain.add_block(newBlock, self.wallet.utxos_snapshot, self.wallet.utxos)
 			self.remove_from_rollback(valid_trans)
 		# ----- UNLOCK --------
 			self.broadcast_block(newBlock)
@@ -369,7 +387,7 @@ class Node:
 		#resolve correct chain
 		print("resolve_conflicts")
 		print('IMAGINE ALL THE PEOPLE')
-		print('\t\t\tLIVING LIFE IN PEACE')
+		print('\t\t\tLIVING LIFE IN PEEEEEEACE')
 		max_length = len(self.valid_chain.block_list)
 		max_id = self.id
 		max_ip= self.ring[max_id]['ip']
@@ -412,7 +430,7 @@ class Node:
 					raise Exception('received invalid chain')
 			
 			# Validate all transactions in confirmed blockchain
-			self.wallet.utxos=new_utxos
+			self.wallet.utxos = self.wallet.utxos_snapshot = new_utxos
 			self.valid_chain = new_blockchain
 			print("__Conflict resolved successfully!__")
 			print("__________SO SALLY CAN WAIT__________")

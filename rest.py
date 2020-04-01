@@ -154,6 +154,7 @@ def receive_trans():
 	for unrec in myNode.unreceived_trans:
 		if(trans.id == unrec.id):
 			print("_ALREADY CONFIRMED THIS TRANSACTION_")
+			print("\t\tI GOT YOU BABE")
 			return # ignore received transaction
 
 	code = myNode.validate_transaction(myNode.wallet.utxos,trans) # added or error
@@ -190,18 +191,7 @@ def receive_block():
 	b.hash = data.get('hash')
 	myNode.receive_block(b)
 	return "Block received OK\n",200
-
-	#if (myNode.validate_block(b)):
-		#print("Node %s: -Block validated\n"%myNode.id)
-		#if(not myNode.valid_chain.addedBlock.isSet()): # node didn't add mined block
-			#myNode.valid_chain.addedBlock.set()
-			#myNode.valid_chain.is_first_received_block(b)
-	#else:
-		#print("Node %s: -Block not validated\n"%myNode.id)
-		#	#myNode.valid_chain.addedBlock.clear()
-	#else:
-		#return "Error: Block rejected\n", 403
-
+	
 
 # sends list of blocks as dict
 @app.route('/get_blockchain',methods=['GET'])
