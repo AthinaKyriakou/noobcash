@@ -36,6 +36,7 @@ def init_connection(total_nodes):
 	global TOTAL_NODES
 	global PORT
 	TOTAL_NODES = int(total_nodes)
+	print("__________MR BLUE SKY PLEASE TELL US WHY YOU HAD TO HIDE AWAY FOR SO LONG__________")
 	print('App starting for ' + str(TOTAL_NODES) + ' nodes')
 	genesis_trans = myNode.create_genesis_transaction(TOTAL_NODES)
 	myNode.valid_chain.create_blockchain(genesis_trans) # also creates genesis block
@@ -61,7 +62,9 @@ def connect_node_request(myIP,port):
 	data = response.json() # dictionary containing id + chain
 	error = 'error' in data.keys()
 	if (not error) :
-		print("____CONNECTED____")	
+		print('____CONNECTED____')
+		print('HEY YOU WITH THE PRETTY FACE')
+		print('\t\t\tWELCOME TO THE HUMAN RACE')
 		potentialID = int(data.get('id'))
 		current_chain = data.get('chain')
 		current_utxos = data.get('utxos')
@@ -153,6 +156,7 @@ def receive_trans():
 	for unrec in myNode.unreceived_trans:
 		if(trans.id == unrec.id):
 			print("_ALREADY CONFIRMED THIS TRANSACTION_")
+			print("\t\tI GOT YOU BABE")
 			return # ignore received transaction
 
 	code = myNode.validate_transaction(myNode.wallet.utxos,trans) # added or error
@@ -189,7 +193,6 @@ def receive_block():
 	b.hash = data.get('hash')
 	myNode.receive_block(b)
 	return "Block received OK\n",200
-
 
 # sends list of blocks as dict
 @app.route('/get_blockchain',methods=['GET'])

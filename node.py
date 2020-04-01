@@ -165,8 +165,8 @@ class Node:
 			print(f"create_transaction: {e.__class__.__name__}: {e}")
 			return "Not enough money!"
 
-	def validate_transaction(self,wallet_utxos, t):
-		#use of signature and NBCs balance
+	# does not change lists of validated or pending transactions, only returns code
+	def validate_transaction(self, wallet_utxos, t): 
 		print("validate_transaction")
 		try:
 			# verify signature
@@ -247,19 +247,34 @@ class Node:
 
 	def receive_block(self, block):
 		print("receive_block")
-		only_block_trans = block.listOfTransactions
+		#only_block_trans = [trans for trans in block.listOfTransactions if trans not in self.rollback_trans]
+		#only_rollback_trans = [trans for trans in self.rollback_trans if trans not in block.listOfTransactions]
 		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
 		if self.block_REDO(block, tmp_utxos):
 			if self.validate_block(block):
 				print("___VALID BLOCK RECEIVED___")
 				self.valid_chain.add_block(block, self.wallet.utxos_snapshot, tmp_utxos)
-				self.wallet.utxos_snapshot = copy.deepcopy(tmp_utxos)
+				
+				# UPDATE LISTS
+
+				# delete from my pending what was in block
+				new_pending = [trans for trans in self.pending_trans if trans not in block.listOfTransactions]
+				self.pending_trans = new_pending
+
+				# add to my unreceived (?)
+				new_unreceived = [trans for trans in block.listOfTransactions if trans not in self.valid_trans]
+				for t in new_unreceived:
+					self.unreceived_trans.append(t)
+				
+				# update validated trans
+				new_valid = [trans for trans in self.valid_trans if trans not in block.listOfTransactions]
+				self.valid_trans = new_valid
+			
 			else:
 				self.resolve_conflict()
 		else:
 			print("__BLOCK REDO FAILED__")
 			self.resolve_conflict()
-		# if valid:  add_block(block, self.wallet.utxos_snapshot, tmp_wallet_utxos)
 
 
 
@@ -318,11 +333,10 @@ class Node:
 
 	#Consensus functions
 
-	def block_REDO(self,block,utxos):
-		# REDO all transaction in block
-		print("__BLOCK_REDO__")
+	# redo all the transactions in a block
+	def block_REDO(self, block, utxos):
 		for trans in block.listOfTransactions:
-			if(self.validate_transaction(utxos, trans) != 'validated'):
+			if (self.validate_transaction(utxos, trans) != 'validated'):
 				return False
 		return True
 
@@ -393,6 +407,8 @@ class Node:
 	def resolve_conflict(self):
 		#resolve correct chain
 		print("resolve_conflicts")
+		print('IMAGINE ALL THE PEOPLE')
+		print('\t\t\tLIVING LIFE IN PEEEEEEACE')
 		max_length = len(self.valid_chain.block_list)
 		max_id = self.id
 		max_ip= self.ring[max_id]['ip']
