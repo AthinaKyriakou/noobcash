@@ -277,7 +277,7 @@ class Node:
 			idx = 0		# TODO: handle the bug properly
 			prevHash = 0
 		else:
-			prevBlock = self.valid_chain.block_list[-1]
+			prevBlock = copy.deepcopy(self.valid_chain.block_list[-1])
 			idx = prevBlock.index + 1
 			prevHash = prevBlock.hash
 		newBlock = block.Block(index = idx, previousHash = prevHash)
