@@ -16,7 +16,7 @@ import wallet
 app = Flask(__name__)
 CORS(app)
 
-PORT = '5000' # specify your port here in string format
+PORT = '5005' # specify your port here in string format
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 

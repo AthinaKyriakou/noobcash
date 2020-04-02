@@ -16,6 +16,7 @@ MINING_DIFFICULTY = 4
 CAPACITY = 1		 	# run capacity = 1, 5, 10
 init_count = -1 		#initial id count, accept ids <= 10
 
+lock = threading.Lock()
 
 class Node:
 	def __init__(self,NUM_OF_NODES=None):
@@ -187,7 +188,6 @@ class Node:
 				if not found:
 					#raise Exception('missing transaction inputs')
 					print('Missing transaction inputs')
-					self.add_transaction_to_pending(t)
 					return 'pending'
 			temp = []
 			if (val_amount >= t.amount):
@@ -226,9 +226,6 @@ class Node:
 		print("add_transaction_to_pending")
 		self.pending_trans.append(t)
 
-	# def add_transaction_to_rollback(self, t):
-	# 	print("add_transaction_to_rollback")
-	# 	self.rollback_trans.append(t)	
 
 	# comparing transaction objects
 	def remove_from_old_valid(self, to_remove):
@@ -256,20 +253,19 @@ class Node:
 
 	def receive_block(self, block):
 		print("receive_block")
-		#only_block_trans = [trans for trans in block.listOfTransactions if trans not in self.rollback_trans]
-		#only_rollback_trans = [trans for trans in self.rollback_trans if trans not in block.listOfTransactions]
 		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
 		if self.block_REDO(block, tmp_utxos):
+			lock.acquire()
 			if self.validate_block(block):
 				print("___VALID BLOCK RECEIVED___")
 				self.valid_chain.add_block(block)
+				lock.release()
 				
 				# UPDATE LISTS
-
 				# delete from my pending what was in block
 				new_pending = [trans for trans in self.pending_trans if trans not in block.listOfTransactions]
 				self.pending_trans = new_pending
-
+				
 				# add to my unreceived
 				new_unreceived = [trans for trans in block.listOfTransactions if trans not in (self.old_valid and self.pending_trans)]
 				for t in new_unreceived:
@@ -283,6 +279,7 @@ class Node:
 				self.wallet.utxos = copy.deepcopy(tmp_utxos)
 			
 			else:
+				lock.release()
 				self.resolve_conflict()
 		else:
 			print("__BLOCK REDO FAILED__")
@@ -335,6 +332,7 @@ class Node:
 			return
 
 		self.mine_block(newBlock)
+		lock.acquire()
 		# ----- LOCK ----------
 		if self.validate_block(newBlock):
 			print('***Mined block valida will be broadcasted')
@@ -342,8 +340,10 @@ class Node:
 			self.remove_from_old_valid(valid_trans)
 			self.wallet.utxos_snapshot = current_utxos
 		# ----- UNLOCK --------
+			lock.release()
 			self.broadcast_block(newBlock)
 		else:
+			lock.release()
 			print('***Mined block invalida will not be broadcasted')
 		return
 
