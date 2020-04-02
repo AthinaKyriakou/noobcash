@@ -148,7 +148,7 @@ def print_n_return(msg, code):
 
 @app.route('/receive_trans',methods=['POST']) #TODO: remember to check the fields again
 def receive_trans():
-	print("node received a transaction")
+	print("***node received a transaction")
 	data = request.get_json()
 	trans = transaction.Transaction(**data)
 
@@ -225,7 +225,7 @@ def transaction_new():
 	data = request.get_json()
 	amount = int(data.get('amount'))
 	id = int(data.get('id'))
-	print('*** SHE IS LIKE A RAINBOW ***')
+	# print('*** SHE IS LIKE A RAINBOW ***')
 	#print(myNode.ring)
 	ip = myNode.ring[id].get('ip')
 	port = myNode.ring[id].get('port')
@@ -250,6 +250,11 @@ def show_balance():
 	balance = myNode.wallet.balance()
 	response = {'Balance': balance}
 	return json.dumps(response)+"\n", 200
+
+@app.route('/blockchain/view', methods=['GET'])
+def view_blockchain():
+	myNode.valid_chain.print_chain()
+	return "OK",200
 
 @app.route('/transactions/view', methods=['GET'])
 def view_transactions():

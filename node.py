@@ -60,7 +60,7 @@ class Node:
 		return
 
 	def broadcast_ring(self):
-		print('*** AND I WILL SEND ALL MY LOVING TO YOUUUU ***')
+		# print('*** AND I WILL SEND ALL MY LOVING TO YOUUUU ***')
 		print(self.ring)
 		url="connect/ring"
 		message=self.ring
@@ -72,7 +72,7 @@ class Node:
 	# and returns a list of block Objects
 	def add_block_list_to_chain(self,valid_chain_list, block_list):
 		for d in block_list:
-			print("add_block_list_to_chain")
+			# print("add_block_list_to_chain")
 			newBlock = block.Block(index = d.get('index'), previousHash = d.get('previousHash'))
 			newBlock.timestamp = d.get('timestamp')
 			newBlock.nonce = d.get('nonce')
@@ -130,7 +130,7 @@ class Node:
 		return trans
 
 	def create_transaction(self, sender_public, senderID, receiver_public, receiverID, amount):
-		print("create_transaction")
+		# print("create_transaction")
 		sum = 0
 		inputs = []
 		
@@ -161,7 +161,7 @@ class Node:
 
 	# does not change lists of validated or pending transactions, only returns code
 	def validate_transaction(self, wallet_utxos, t): 
-		print("validate_transaction")
+		# print("validate_transaction")
 		try:
 			# verify signature
 			if not t.verify_signature():
@@ -210,7 +210,7 @@ class Node:
 	# check if any of the pending transactions can be validated
 	# if it can be validated, remove it from pending and added to validated
 	def validate_pending(self):
-		print("validate_pending")
+		# print("validate_pending")
 		for t in self.pending_trans:
 			if self.validate_transaction(self.wallet.utxos, t) == 'validated':
 				self.pending_trans.remove(t)
@@ -240,18 +240,18 @@ class Node:
 			# print(str(os.getpid()) + ' assigned it to mining thread')
 			return True				
 		else:
-			print("__Capacity is not full yet or has leacked__")
+			# print("__Capacity is not full yet or has leacked__")
 			print(len(self.valid_trans))
 			return False
 
 
 	def receive_block(self, block):
-		print("receive_block")
+		# print("receive_block")
 		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
 		if self.block_REDO(block, tmp_utxos):
 			lock.acquire()
 			if self.validate_block(block):
-				print("___VALID BLOCK RECEIVED___")
+				# print("___VALID BLOCK RECEIVED___")
 				self.valid_chain.add_block(block)
 				lock.release()
 				
@@ -280,7 +280,7 @@ class Node:
 				lock.release()
 				self.resolve_conflict()
 		else:
-			print("__BLOCK REDO FAILED__")
+			# print("__BLOCK REDO FAILED__")
 			self.resolve_conflict()
 
 
@@ -288,7 +288,7 @@ class Node:
     # [THREAD] initialize a new_block
 	def create_new_block(self, valid_trans):	 
 		if len(self.valid_chain.block_list) == 0:
-			print('Genesis block was not added properly to valid chain')
+			# print('Genesis block was not added properly to valid chain')
 			idx = 0		# TODO: handle the bug properly
 			prevHash = 0
 		else:
@@ -303,12 +303,12 @@ class Node:
 	# [THREAD]
 	def mine_block(self, block, difficulty = MINING_DIFFICULTY):
 		guess = block.myHash()
-		print("________KNOCK KNOCK KNOCKING ON HEAVEN'S DOOR________")
+		# print("________KNOCK KNOCK KNOCKING ON HEAVEN'S DOOR________")
 		while guess[:difficulty]!=('0'*difficulty):
 			block.nonce += 1
 			guess = block.myHash()
 		block.hash = guess
-		print('Mining succeded by{}'.format(threading.current_thread()))
+		# print('Mining succeded by{}'.format(threading.current_thread()))
 		return
 
 	# [THREAD]	
@@ -318,8 +318,8 @@ class Node:
 
 	# [THREAD] create block and call mine
 	def init_mining(self, valid_trans, current_utxos):
-		print("init_miner")
-		print('Task Executed {}'.format(threading.current_thread()))
+		# print("init_miner")
+		# print('Task Executed {}'.format(threading.current_thread()))
 		newBlock = self.create_new_block(valid_trans)
 		# shared = [t for t in newBlock.listOfTransactions if t in self.valid_chain.block_list[-1].listOfTransactions]
 		# if (shared):
@@ -360,6 +360,7 @@ class Node:
 	# validate chain's hashes
 	def chain_hashes_validation(self,chain):
 		prev_hash = chain[0].hash
+
 		for b in chain[1:]:
 			if(b.previousHash != prev_hash or b.hash != b.myHash()):
 				return False
@@ -368,8 +369,7 @@ class Node:
 
 	# validates and returns list of block objects
 	def validate_chain(self, blocklist):
-		print("__validate chain__")
-		print("__________I CAN STILL HEAR YOU SAYING__________")
+		# print("__________I CAN STILL HEAR YOU SAYING__________")
 		
 		chain = []
 		# initialize pending and unreceived transactions
@@ -394,18 +394,8 @@ class Node:
 			return False
 
 		cnt = 1 # to keep iterating over new chain
-		prev_hash = chain[0].hash
 		# i is our old block, j the block from new blockchain
 		for i, j in zip(self.valid_chain.block_list[1:], chain[1:]):
-			print("CHECKING HASHES:::::")
-			print(i.hash)
-			print("~~~~~~~~~~~~~")
-			print(j.hash)
-
-			if(j.previousHash != prev_hash):
-				print("Chain invalid!")
-				return False,None,None
-			prev_hash = j.hash
 
 			old_trans = i.listOfTransactions
 			new_trans = j.listOfTransactions
@@ -427,19 +417,13 @@ class Node:
 
 		# continue validating chain
 		for j in chain[cnt:]:
-			print("CHECKING HASH:::::")
-			print(j.hash)
-			if(j.previousHash != prev_hash):
-				print("Chain invalid!")
-				return False,None,None
 
-			prev_hash = j.hash
 			new_trans = j.listOfTransactions
 			tmp_pending = [t for t in pending if t not in new_trans]
 			tmp_unreceived = unreceived + [t for t in new_trans if t not in pending]
 
 			if( not self.block_REDO(j,tmp_utxos) ):
-				print("Chain invalid!")
+				print("___Rest of Chain invalid!")
 				return False,None,None
 
 			pending = tmp_pending
@@ -458,16 +442,13 @@ class Node:
 
 	def resolve_conflict(self):
 		#resolve correct chain
-		print('IMAGINE ALL THE PEOPLE')
-		print('\t\t\tLIVING LIFE IN PEEEEEEACE')
+		# print('IMAGINE ALL THE PEOPLE')
+		# print('\t\t\tLIVING LIFE IN PEEEEEEACE')
 		max_length = len(self.valid_chain.block_list)
 		max_id = self.id
 		max_ip= self.ring[max_id]['ip']
 		max_port= self.ring[max_id]['port']
 		#check if someone has longer block chain
-		print("_____my block hashes are_____")
-		for b in self.valid_chain.block_list:
-			print(b.hash,"->")
 		try:
 			for key in self.ring:
 				node=self.ring[key]
