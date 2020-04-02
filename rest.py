@@ -165,7 +165,7 @@ def receive_trans():
 	if (code == 'validated'):
 		print('VIVA LA TRANSACTION VALIDA %s to %s!' %(data.get('senderID'), data.get('receiverID')))
 		isBlockMined = myNode.add_transaction_to_validated(trans)
-		myNode.add_transaction_to_rollback(trans)
+		# myNode.add_transaction_to_rollback(trans)
 
 		# check if with updated utxos, pending transactions can be validated
 		myNode.validate_pending()

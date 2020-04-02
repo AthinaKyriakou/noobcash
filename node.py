@@ -29,7 +29,7 @@ class Node:
 		self.valid_trans = []							# list of validated transactions collected to create a new block
 		self.pending_trans = []							# list of pending for approval trans
 		self.unreceived_trans = []						# list of transactions that are known because of a received block, they are not received individually
-
+		self.old_valid = []								# to keep a copy of validated transactions in case miner empties them while mining
 
 	
 	def toURL(self,nodeID):
@@ -214,7 +214,7 @@ class Node:
 
 	# check if any of the pending transactions can be validated
 	# if it can be validated, remove it from pending and added to validated
-	def validate_pending():
+	def validate_pending(self):
 		print("validate_pending")
 		for t in self.pending_trans:
 			if validate_transaction(self.wallet.utxos, t) == 'validated':
@@ -231,10 +231,10 @@ class Node:
 	# 	self.rollback_trans.append(t)	
 
 	# comparing transaction objects
-	# def remove_from_rollback(self, valid_trans):
-	# 	print("remove_from_rollback")
-	# 	tmp = [trans for trans in self.rollback_trans if trans not in valid_trans]
-	# 	self.rollback_trans = tmp
+	def remove_from_old_valid(self, to_remove):
+		print("remove_from_old_valid")
+		tmp = [trans for trans in self.old_valid if trans not in to_remove]
+		self.old_valid = tmp
 
 	# add transaction to list of valid_trans
 	# call mine if it is full
@@ -243,6 +243,7 @@ class Node:
 		global CAPACITY
 		print("add_transaction_to_validated")
 		self.valid_trans.append(transaction)
+		self.old_valid.append(transaction)
 		if len(self.valid_trans) == CAPACITY:
 			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
 			self.valid_trans = []									# reinitialize the valid transactions list
@@ -270,13 +271,14 @@ class Node:
 				self.pending_trans = new_pending
 
 				# add to my unreceived
-				new_unreceived = [trans for trans in block.listOfTransactions if trans not in (self.valid_trans and self.pending_trans)]
+				new_unreceived = [trans for trans in block.listOfTransactions if trans not in (self.old_valid and self.pending_trans)]
 				for t in new_unreceived:
 					self.unreceived_trans.append(t)
 				
 				# update validated trans
-				new_valid = [trans for trans in self.valid_trans if trans not in block.listOfTransactions]
+				new_valid = [trans for trans in self.old_valid if trans not in block.listOfTransactions]
 				self.valid_trans = new_valid
+				self.remove_from_old_valid(block.listOfTransactions)
 				self.wallet.utxos_snapshot = copy.deepcopy(tmp_utxos)
 				self.wallet.utxos = copy.deepcopy(tmp_utxos)
 			
@@ -327,11 +329,17 @@ class Node:
 		print("init_miner")
 		print('Task Executed {}'.format(threading.current_thread()))
 		newBlock = self.create_new_block(valid_trans)
+		shared = [t for t in newBlock.listOfTransactions if t in self.valid_chain.block_list[-1].listOfTransactions]
+		if (shared):
+			print("Stopping mining, block already added")
+			return
+
 		self.mine_block(newBlock)
 		# ----- LOCK ----------
 		if self.validate_block(newBlock):
 			print('***Mined block valida will be broadcasted')
 			self.valid_chain.add_block(newBlock)
+			self.remove_from_old_valid(valid_trans)
 			self.wallet.utxos_snapshot = current_utxos
 		# ----- UNLOCK --------
 			self.broadcast_block(newBlock)
@@ -380,7 +388,7 @@ class Node:
 		if not self.chain_hashes_validation(chain):
 			print("CHAIN HAS INVALID HASHES")
 			return False
-
+			
 		# i is our old block, j the block from new blockchain
 		for i, j in zip(self.valid_chain.block_list[1:], chain[1:]):
 			print("CHECKING HASHES:::::")
