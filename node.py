@@ -13,7 +13,7 @@ import threadpool
 import time
 
 MINING_DIFFICULTY = 4
-CAPACITY = 1		 	# run capacity = 1, 5, 10
+CAPACITY = 5		 	# run capacity = 1, 5, 10
 init_count = -1 		#initial id count, accept ids <= 10
 
 lock = threading.Lock()
@@ -84,7 +84,6 @@ class Node:
 		return
 
 
-
 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
 	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
 	def register_node_to_ring(self, nodeID, ip, port, public_key):
@@ -93,6 +92,8 @@ class Node:
 			if(self.id!=nodeID):
 				self.wallet.utxos[public_key]=[] # initialize utxos of other nodes
 		else:
+			print("failed to register")
+		return
 
 	# get node's id in the ring, given its key
 	def public_key_to_ring_id(self, public_key):
@@ -211,7 +212,7 @@ class Node:
 	def validate_pending(self):
 		print("validate_pending")
 		for t in self.pending_trans:
-			if validate_transaction(self.wallet.utxos, t) == 'validated':
+			if self.validate_transaction(self.wallet.utxos, t) == 'validated':
 				self.pending_trans.remove(t)
 				self.add_transaction_to_validated(t)
 
@@ -236,9 +237,11 @@ class Node:
 			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
 			self.valid_trans = []									# reinitialize the valid transactions list
 			future = self.pool.submit_task(self.init_mining, tmp, copy.deepcopy(self.wallet.utxos))
-			print(str(os.getpid()) + ' assigned it to mining thread')
+			# print(str(os.getpid()) + ' assigned it to mining thread')
 			return True				
 		else:
+			print("__Capacity is not full yet or has leacked__")
+			print(len(self.valid_trans))
 			return False
 
 
@@ -264,7 +267,11 @@ class Node:
 				
 				# update validated trans
 				new_valid = [trans for trans in self.old_valid if trans not in block.listOfTransactions]
-				self.valid_trans = new_valid
+				self.valid_trans = []
+
+				for t in new_valid:
+					self.add_transaction_to_validated(t)
+
 				self.remove_from_old_valid(block.listOfTransactions)
 				self.wallet.utxos_snapshot = copy.deepcopy(tmp_utxos)
 				self.wallet.utxos = copy.deepcopy(tmp_utxos)
@@ -314,8 +321,13 @@ class Node:
 		print("init_miner")
 		print('Task Executed {}'.format(threading.current_thread()))
 		newBlock = self.create_new_block(valid_trans)
-		shared = [t for t in newBlock.listOfTransactions if t in self.valid_chain.block_list[-1].listOfTransactions]
-		if (shared):
+		# shared = [t for t in newBlock.listOfTransactions if t in self.valid_chain.block_list[-1].listOfTransactions]
+		# if (shared):
+		# 	print("Stopping mining, block already added")
+		# 	return
+
+		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
+		if not self.block_REDO(newBlock, tmp_utxos):
 			print("Stopping mining, block already added")
 			return
 
@@ -495,5 +507,6 @@ class Node:
 			self.valid_chain.block_list = new_blockchain
 			print("__Conflict resolved successfully!__")
 			print("__________SO SALLY CAN WAIT__________")
+			self.valid_chain.print_chain()
 		except Exception as e:
 			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')

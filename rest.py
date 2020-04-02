@@ -16,7 +16,7 @@ import wallet
 app = Flask(__name__)
 CORS(app)
 
-PORT = '5005' # specify your port here in string format
+PORT = '5000' # specify your port here in string format
 TOTAL_NODES = 0
 NODE_COUNTER = 0 
 
@@ -206,8 +206,6 @@ def get_blockchain():
 	print("__SENDING CHAIN CHAIN CHAIIIN:__")
 	print("________________________________")
 	for block in myNode.valid_chain.block_list:
-		print("__BLOCK HASH__")
-		print(block.hash)
 		tmp=copy.deepcopy(block.__dict__)
 		tmp['listOfTransactions']=block.listToSerialisable()
 		blocks.append(tmp)
