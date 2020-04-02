@@ -28,7 +28,6 @@ class Node:
 		
 		self.valid_trans = []							# list of validated transactions collected to create a new block
 		self.pending_trans = []							# list of pending for approval trans
-		self.rollback_trans = []						# list of transactions that might be rollbacked once a new block is received
 		self.unreceived_trans = []						# list of transactions that are known because of a received block, they are not received individually
 
 
@@ -155,7 +154,6 @@ class Node:
 
 			if(self.validate_transaction(self.wallet.utxos,trxn) == 'validated'): # Node validates the trxn it created
 				self.add_transaction_to_validated(trxn)
-				self.add_transaction_to_rollback(trxn)
 				self.broadcast_transaction(trxn)
 				return "Created new transaction!"
 			else:
@@ -218,15 +216,15 @@ class Node:
 		print("add_transaction_to_pending")
 		self.pending_trans.append(t)
 
-	def add_transaction_to_rollback(self, t):
-		print("add_transaction_to_rollback")
-		self.rollback_trans.append(t)	
+	# def add_transaction_to_rollback(self, t):
+	# 	print("add_transaction_to_rollback")
+	# 	self.rollback_trans.append(t)	
 
 	# comparing transaction objects
-	def remove_from_rollback(self, valid_trans):
-		print("remove_from_rollback")
-		tmp = [trans for trans in self.rollback_trans if trans not in valid_trans]
-		self.rollback_trans = tmp
+	# def remove_from_rollback(self, valid_trans):
+	# 	print("remove_from_rollback")
+	# 	tmp = [trans for trans in self.rollback_trans if trans not in valid_trans]
+	# 	self.rollback_trans = tmp
 
 	# add transaction to list of valid_trans
 	# call mine if it is full
@@ -253,7 +251,7 @@ class Node:
 		if self.block_REDO(block, tmp_utxos):
 			if self.validate_block(block):
 				print("___VALID BLOCK RECEIVED___")
-				self.valid_chain.add_block(block, self.wallet.utxos_snapshot, tmp_utxos)
+				self.valid_chain.add_block(block)
 				
 				# UPDATE LISTS
 
@@ -323,9 +321,8 @@ class Node:
 		# ----- LOCK ----------
 		if self.validate_block(newBlock):
 			print('***Mined block valida will be broadcasted')
-			self.valid_chain.add_block(newBlock, self.wallet.utxos_snapshot, self.wallet.utxos)
+			self.valid_chain.add_block(newBlock)
 			self.wallet.utxos_snapshot = current_utxos
-			self.remove_from_rollback(valid_trans)
 		# ----- UNLOCK --------
 			self.broadcast_block(newBlock)
 		else:
