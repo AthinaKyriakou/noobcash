@@ -13,13 +13,12 @@ import threadpool
 import time
 
 MINING_DIFFICULTY = 4
-CAPACITY = 5		 	# run capacity = 1, 5, 10
+CAPACITY = 1		 	# run capacity = 1, 5, 10
 init_count = -1 		#initial id count, accept ids <= 10
 
 trans_time_start = None
 trans_time_end = None
 block_time = 0
-cnt_blocks = 0
 
 lock = threading.Lock()
 
@@ -43,10 +42,15 @@ class Node:
 
 
 	def trans_timer(self):
+		global trans_time_end, trans_time_start
 		return trans_time_start, trans_time_end
 
 	def block_timer(self):
-		return block_time/cnt_blocks
+		global block_time
+		return block_time/len(self.valid_chain.block_list)
+
+	def numBlocks(self):
+		return CAPACITY*len(self.valid_chain.block_list)
 
 
 	def broadcast(self,message, url):
@@ -150,7 +154,7 @@ class Node:
 		
 		global trans_time_start
 		if (not trans_time_start):
-			# trans_time_start = time.time()
+			trans_time_start = time.gmtime(time.time())
 			print("__Started calculating transaction time__")
 
 		try:
@@ -231,10 +235,11 @@ class Node:
 	# check if any of the pending transactions can be validated
 	# if it can be validated, remove it from pending and added to validated
 	def validate_pending(self):
-		# print("validate_pending")
+		print("validate_pending")
 		for t in self.pending_trans:
 			if self.validate_transaction(self.wallet.utxos, t) == 'validated':
-				self.pending_trans.remove(t)
+				# self.pending_trans.remove(t)
+				self.pending_trans = [t for t in self.pending_trans if t.id not in self.pending_trans]
 				self.add_transaction_to_validated(t)
 
 
@@ -261,14 +266,14 @@ class Node:
 			# print(str(os.getpid()) + ' assigned it to mining thread')
 			return True				
 		else:
-			# print("__Capacity is not full yet or has leacked__")
-			# print(len(self.valid_trans))
 			return False
 
 
 	def receive_block(self, block):
 		# print("receive_block")
 		# block_start = time.time()
+		global lock, trans_time_end
+
 		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
 		if self.block_REDO(block, tmp_utxos):
 			lock.acquire()
@@ -279,10 +284,7 @@ class Node:
 				# block_end = time.time()
 				global block_time, cnt_blocks
 				# block_time+=block_end - block_start
-				cnt_blocks+=1
-
-				global trans_time_end
-				# trans_time_end = time.time()
+				trans_time_end = time.gmtime(time.time())
 				
 				self.wallet.utxos_snapshot = copy.deepcopy(tmp_utxos)
 				self.wallet.utxos = copy.deepcopy(tmp_utxos)
@@ -302,10 +304,10 @@ class Node:
 				new_valid = [trans for trans in self.old_valid if trans not in block.listOfTransactions]
 				self.valid_trans = []
 
+				self.remove_from_old_valid(block.listOfTransactions)
+
 				for t in new_valid:
 					self.add_transaction_to_validated(t)
-
-				self.remove_from_old_valid(block.listOfTransactions)
 				# check if new block is useful for validation of pending transactions
 				self.validate_pending() 			
 
@@ -313,7 +315,7 @@ class Node:
 				lock.release()
 				self.resolve_conflict()
 		else:
-			# print("__BLOCK REDO FAILED__")
+			print("___RECEIVED BLOCK REDO FAILED__")
 			self.resolve_conflict()
 
 
@@ -349,8 +351,11 @@ class Node:
 
 	# [THREAD] create block and call mine
 	def init_mining(self, valid_trans, current_utxos):
-		global block_time, trans_time_end, cnt_blocks
+		# global block_time, trans_time_end, cnt_blocks
 		# block_start = time.time()
+
+		global lock, trans_time_end, block_time
+
 		newBlock = self.create_new_block(valid_trans)
 		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
 		if not self.block_REDO(newBlock, tmp_utxos):
@@ -368,14 +373,17 @@ class Node:
 			# block_end = time.time()
 			# block_time+=block_end - block_start
 			# cnt_blocks+=1
-			# trans_time_end = time.time()
+			trans_time_end = time.gmtime(time.time())
 			
 			self.remove_from_old_valid(valid_trans)
-			self.wallet.utxos_snapshot = current_utxos
+			self.wallet.utxos_snapshot = tmp_utxos
 			# print("NEW SNAPSHOT UTXOS")
 			# print(self.wallet.utxos_snapshot)
 		# ----- UNLOCK --------
 			lock.release()
+			block_time+=time.thread_time()
+			print("THREAD EXECUTED FOR:::")
+			print(block_time)
 			self.broadcast_block(newBlock)
 		else:
 			lock.release()
@@ -391,9 +399,9 @@ class Node:
 			if (self.validate_transaction(utxos, trans) != 'validated'):
 				print("Failed Transaction: ")
 				print('\t\tsender id: ' + str(trans.senderID) + ' \t\treceiver id: '+ str(trans.receiverID) + ' \t\tamount: '+ str(trans.amount))
-				print("Inputs:")
-				for i in trans.transaction_inputs:
-					print('-- ',i)
+				# print("Inputs:")
+				# for i in trans.transaction_inputs:
+				# 	print('-- ',i)
 				return False
 		return True
 
@@ -477,6 +485,8 @@ class Node:
 		# validation successfull
 		self.pending_trans = copy.deepcopy(pending)
 		self.unreceived_trans = copy.deepcopy(unreceived)
+		self.old_valid = []
+		self.valid_trans = []
 		# print("__PENDING AFTER__")
 		# for p in self.pending_trans:
 		# 	print(str(p.hash))

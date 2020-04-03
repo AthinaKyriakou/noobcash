@@ -11,7 +11,7 @@ import blockchain
 import wallet
 import transaction
 import wallet
-
+import numpy as np
 
 app = Flask(__name__)
 CORS(app)
@@ -68,9 +68,10 @@ def connect_node_request(myIP,port):
 		potentialID = int(data.get('id'))
 		current_chain = data.get('chain')
 		current_utxos = data.get('utxos')
+		utxos_snapshot = data.get('utxos_snapshot')
 		myNode.id = potentialID
-		myNode.wallet.utxos = copy.deepcopy(current_utxos)
-		myNode.wallet.utxos_snapshot = copy.deepcopy(current_utxos)
+		myNode.wallet.utxos = current_utxos
+		myNode.wallet.utxos_snapshot = utxos_snapshot
 		myNode.add_block_list_to_chain(myNode.valid_chain.block_list, current_chain)
 		message={}
 		message['public_key']=myNode.wallet.public_key
@@ -115,6 +116,7 @@ def receive_node_request():
 			new_data = {}
 			new_data['id'] = str(newID)
 			new_data['utxos'] = myNode.wallet.utxos
+			new_data['utxos_snapshot'] = myNode.wallet.utxos_snapshot
 			blocks = []
 			for block in myNode.valid_chain.block_list:
 				tmp=copy.deepcopy(block.__dict__)
@@ -256,11 +258,45 @@ def view_blockchain():
 	myNode.valid_chain.print_chain()
 	return "OK",200
 
+
 @app.route('/transactions/view', methods=['GET'])
 def view_transactions():
 	last_transactions = myNode.valid_chain.block_list[-1].listOfTransactions
-	response= {'List of transactions in the last verified block': last_transactions}
+	response = {}
+	for t,i in zip(last_transactions,np.arange(len(last_transactions))):
+		print(t)
+		sender_pk = t.sender
+		receiver_pk = t.receiver
+		for id, info in myNode.ring.items():
+			if info['public_key'] == sender_pk:
+				sender_id = id
+			if info['public_key'] == receiver_pk:
+				receiver_id = id
+		tmp={}
+		tmp['sender_id']=sender_id
+		tmp['receiver_id']=receiver_id
+		tmp['amount']=t.amount
+		response[str(i)] = tmp
 	return json.dumps(response)+"\n", 200
+
+
+
+@app.route('/time/transaction', methods=['GET'])
+def trans_time():
+	start, end = myNode.trans_timer()
+	response = {}
+	response['start'] = f'{start[3]}:{start[4]}:{start[5]}:{start[6]}:{start[7]}:{start[8]}'
+	response['end'] = f'{end[3]}:{end[4]}:{end[5]}:{end[6]}:{end[7]}:{end[8]}'
+	response['# transactions'] = myNode.numBlocks()
+	return json.dumps(response), 200
+
+@app.route('/time/block', methods=['GET'])
+def block_time():
+	average = myNode.block_timer()
+	response={}
+	response['average block time'] = average
+	return json.dumps(response), 200
+
 
 
 # run it once for every node
