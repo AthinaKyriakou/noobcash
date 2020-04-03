@@ -18,7 +18,6 @@ class Transaction:
 
     def __init__(self, sender, senderID, receiver, receiverID, amount, transaction_inputs, transaction_outputs = [], id = None, signature = None):
         ##set
-        print('transaction_init')
         self.sender = sender                                # public key str
         self.receiver = receiver                            # public key str
         self.senderID = senderID                            # ring IDs int
@@ -38,7 +37,6 @@ class Transaction:
         return self.id == other.id
 
     def to_dict(self):
-        print('to_dict')
         return OrderedDict([('sender', self.sender), ('receiver', self.receiver), ('amount', self.amount), ('transaction_inputs', self.transaction_inputs), ('transaction_outputs', self.transaction_outputs), ('id', self.id), ('signature', self.signature)])
 
     def hash(self):
@@ -47,7 +45,6 @@ class Transaction:
         return SHA384.new(temp.encode())
 
     def sign_transaction(self, sender_private_key):
-        print('sign_transaction')
         hash_obj = self.hash() 
         private_key = RSA.importKey(sender_private_key) 
         signer = PKCS1_v1_5.new(private_key)
@@ -58,7 +55,7 @@ class Transaction:
     def verify_signature(self):
         #Verifies with a public key from whom the data came that it was indeed 
         #signed by their private key
-        print('verify signature')
+        # print('verify signature')
         rsa_key = RSA.importKey(self.sender.encode()) #sender public key
         verifier = PKCS1_v1_5.new(rsa_key) 
         hash_obj = self.hash()

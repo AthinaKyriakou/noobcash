@@ -17,16 +17,14 @@ class Wallet:
 
 	def __init__(self, utxos={}):
 		##set
-		print("wallet_init")
 		rsa_key = RSA.generate(1024)
 		self.private_key = rsa_key.exportKey('PEM').decode()
 		self.public_key = rsa_key.publickey().exportKey('PEM').decode()
-		self.utxos= utxos #key : public key, value: {id, to_who, amount}
+		self.utxos = utxos #key : public key, value: {id, to_who, amount}
 		self.utxos_snapshot = {} # we will use it to validate any received block
 
 
 	def balance(self):
-		print("balance")
 		temp=self.public_key
 		sum=0
 		for i in self.utxos[temp]:

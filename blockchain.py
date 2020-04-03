@@ -19,7 +19,6 @@ class Blockchain:
 
 	def __init__(self):
 		##set
-		print('blockchain_init')
 		self.block_list = []
 		
 	# create bootstrap_node and 
