@@ -16,8 +16,7 @@ if __name__ == '__main__':
 	file = f'transactions/{num_nodes}nodes/transactions{myID}.txt'
 	f = open(file,"r")
 	lines = f.readlines()
-
-	# for line in open(file,"r"):
+	
 	for line, i in zip(lines[start:], np.arange(start,end+1,1)):
 		print(f'executing line {line}')
 		id, amount = line.split()

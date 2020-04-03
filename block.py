@@ -6,7 +6,6 @@ import json
 
 class Block:
 	def __init__(self, index = -1, previousHash = None):
-		##set
 		self.index = index
 		self.previousHash = previousHash
 		self.timestamp = datetime.datetime.now().timestamp()
@@ -15,7 +14,6 @@ class Block:
 		self.hash = None
 
 	def listToSerialisable(self):
-		#print("listToSerialisable")
 		final = []
 		for trans in self.listOfTransactions:
 			final.append(trans.__dict__)

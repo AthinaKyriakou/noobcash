@@ -39,7 +39,7 @@ class Blockchain:
 
 	# add to chain 
 	def add_block(self, new_block):
-		print("add_block")
+		# print("add_block")
 		self.block_list.append(new_block)
 		self.print_chain()
 		print('length: \t' + str(len(self.block_list)))

@@ -30,7 +30,6 @@ class Transaction:
 
 
     # 2 transactions are equal when they have the same hash (compare 2 strings)
-    # used to remove from rollback
     def __eq__(self, other):    
         if not isinstance(other, Transaction):
             return NotImplemented
@@ -48,14 +47,13 @@ class Transaction:
         hash_obj = self.hash() 
         private_key = RSA.importKey(sender_private_key) 
         signer = PKCS1_v1_5.new(private_key)
-        self.id = hash_obj.hexdigest() #SET ID. This is an object from the Crypto.Hash package. It has been used to digest the message to sign. safer as a hex
-        self.signature = base64.b64encode(signer.sign(hash_obj)).decode() #ισως να μπορουμε και με binascii. not sure why encoding&decoding is needed
+        self.id = hash_obj.hexdigest() 
+        self.signature = base64.b64encode(signer.sign(hash_obj)).decode()
         return self.signature
  
     def verify_signature(self):
         #Verifies with a public key from whom the data came that it was indeed 
         #signed by their private key
-        # print('verify signature')
         rsa_key = RSA.importKey(self.sender.encode()) #sender public key
         verifier = PKCS1_v1_5.new(rsa_key) 
         hash_obj = self.hash()

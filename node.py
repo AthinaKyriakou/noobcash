@@ -14,7 +14,7 @@ import time
 
 MINING_DIFFICULTY = 4
 CAPACITY = 1		 	# run capacity = 1, 5, 10
-init_count = -1 		#initial id count, accept ids <= 10
+init_count = -1 		
 
 trans_time_start = None
 trans_time_end = None
@@ -64,12 +64,12 @@ class Node:
 
 	def broadcast_transaction(self, trans):
 		url = "receive_trans"
-		message = copy.deepcopy(trans.__dict__) #returns attributes as keys, and their values as value
+		message = copy.deepcopy(trans.__dict__)
 		self.broadcast(message,url)
 		return
 
 	def broadcast_block(self, block):
-		print('***node ' + str(self.id) + ' broadcast_block')
+		# print('***node ' + str(self.id) + ' broadcast_block')
 		url = "receive_block"
 		message = copy.deepcopy(block.__dict__)
 		message['listOfTransactions'] = block.listToSerialisable()
@@ -93,7 +93,7 @@ class Node:
 			newBlock = block.Block(index = d.get('index'), previousHash = d.get('previousHash'))
 			newBlock.timestamp = d.get('timestamp')
 			newBlock.nonce = d.get('nonce')
-			newBlock.listOfTransactions = []		# create transactions from received dict
+			newBlock.listOfTransactions = []		
 			for t in d.get('listOfTransactions'):
 				newBlock.listOfTransactions.append(transaction.Transaction(**t))
 			newBlock.hash = d.get('hash')
@@ -102,7 +102,7 @@ class Node:
 
 
 	#add this node to the ring, only the bootstrap node can add a node to the ring after checking his wallet and ip:port address
-	#bottstrap node informs all other nodes and gives the request node an id and 100 NBCs
+	#bootstrap node informs all other nodes and gives the request node an id and 100 NBCs
 	def register_node_to_ring(self, nodeID, ip, port, public_key):
 		if self.id == 0:
 			self.ring[nodeID] = {'ip': ip,'port': port,'public_key': public_key}
@@ -155,7 +155,6 @@ class Node:
 		global trans_time_start
 		if (not trans_time_start):
 			trans_time_start = time.gmtime(time.time())
-			print("__Started calculating transaction time__")
 
 		try:
 			if(self.wallet.balance() < amount):
@@ -207,7 +206,6 @@ class Node:
 						break
 				if not found:
 					#raise Exception('missing transaction inputs')
-					# print('Missing transaction inputs')
 					return 'pending'
 			temp = []
 			if (val_amount >= t.amount):
@@ -238,7 +236,6 @@ class Node:
 		print("validate_pending")
 		for t in self.pending_trans:
 			if self.validate_transaction(self.wallet.utxos, t) == 'validated':
-				# self.pending_trans.remove(t)
 				self.pending_trans = [t for t in self.pending_trans if t.id not in self.pending_trans]
 				self.add_transaction_to_validated(t)
 
@@ -247,7 +244,7 @@ class Node:
 		self.pending_trans.append(t)
 
 
-	# comparing transaction objects
+
 	def remove_from_old_valid(self, to_remove):
 		tmp = [trans for trans in self.old_valid if trans not in to_remove]
 		self.old_valid = tmp
@@ -260,30 +257,24 @@ class Node:
 		self.valid_trans.append(transaction)
 		self.old_valid.append(transaction)
 		if len(self.valid_trans) == CAPACITY:
-			tmp = copy.deepcopy(self.valid_trans) 					# create a new block out of the valid transactions
-			self.valid_trans = []									# reinitialize the valid transactions list
+			tmp = copy.deepcopy(self.valid_trans) 					
+			self.valid_trans = []									
 			future = self.pool.submit_task(self.init_mining, tmp, copy.deepcopy(self.wallet.utxos))
-			# print(str(os.getpid()) + ' assigned it to mining thread')
 			return True				
 		else:
 			return False
 
 
 	def receive_block(self, block):
-		# print("receive_block")
-		# block_start = time.time()
 		global lock, trans_time_end
 
 		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
 		if self.block_REDO(block, tmp_utxos):
 			lock.acquire()
 			if self.validate_block(block):
-				# print("___VALID BLOCK RECEIVED___")
 				self.valid_chain.add_block(block)
 				
-				# block_end = time.time()
 				global block_time, cnt_blocks
-				# block_time+=block_end - block_start
 				trans_time_end = time.gmtime(time.time())
 				
 				self.wallet.utxos_snapshot = copy.deepcopy(tmp_utxos)
@@ -315,7 +306,6 @@ class Node:
 				lock.release()
 				self.resolve_conflict()
 		else:
-			print("___RECEIVED BLOCK REDO FAILED__")
 			self.resolve_conflict()
 
 
@@ -323,7 +313,7 @@ class Node:
     # [THREAD] initialize a new_block
 	def create_new_block(self, valid_trans):	 
 		if len(self.valid_chain.block_list) == 0:
-			idx = 0		# TODO: handle the bug properly
+			idx = 0
 			prevHash = 0
 		else:
 			prevBlock = self.valid_chain.block_list[-1]
@@ -351,15 +341,13 @@ class Node:
 
 	# [THREAD] create block and call mine
 	def init_mining(self, valid_trans, current_utxos):
-		# global block_time, trans_time_end, cnt_blocks
-		# block_start = time.time()
 
 		global lock, trans_time_end, block_time
 
 		newBlock = self.create_new_block(valid_trans)
 		tmp_utxos = copy.deepcopy(self.wallet.utxos_snapshot)
 		if not self.block_REDO(newBlock, tmp_utxos):
-			print("Stopping mining, block already added")
+			# print("Stopping mining, block already added")
 			return
 
 		self.mine_block(newBlock)
@@ -367,27 +355,20 @@ class Node:
 		lock.acquire()
 		# ----- LOCK ----------
 		if self.validate_block(newBlock):
-			print('***Mined block valida will be broadcasted')
+			# print('***Mined block valida will be broadcasted')
 			self.valid_chain.add_block(newBlock)
-			
-			# block_end = time.time()
-			# block_time+=block_end - block_start
-			# cnt_blocks+=1
 			trans_time_end = time.gmtime(time.time())
 			
 			self.remove_from_old_valid(valid_trans)
 			self.wallet.utxos_snapshot = tmp_utxos
-			# print("NEW SNAPSHOT UTXOS")
-			# print(self.wallet.utxos_snapshot)
+
 		# ----- UNLOCK --------
 			lock.release()
 			block_time+=time.thread_time()
-			print("THREAD EXECUTED FOR:::")
-			print(block_time)
 			self.broadcast_block(newBlock)
 		else:
 			lock.release()
-			print('***Mined block invalida will not be broadcasted')
+			# print('***Mined block invalida will not be broadcasted')
 
 
 	#Consensus functions
@@ -398,9 +379,6 @@ class Node:
 			if (self.validate_transaction(utxos, trans) != 'validated'):
 				print("Failed Transaction: ")
 				print('\t\tsender id: ' + str(trans.senderID) + ' \t\treceiver id: '+ str(trans.receiverID) + ' \t\tamount: '+ str(trans.amount))
-				# print("Inputs:")
-				# for i in trans.transaction_inputs:
-				# 	print('-- ',i)
 				return False
 		return True
 
@@ -425,20 +403,13 @@ class Node:
 		pending += valid
 		unreceived = copy.deepcopy(self.unreceived_trans)	# then we will add them to node's lists
 		tmp_utxos = {}
-		# print("__PENDING BEFORE__")
-		# for p in pending:
-		# 	print(str(p.hash))
-		# 	print("~~~~~~~~~~")
-		# print("__UNRECEIVED BEFORE__")
-		# for u in unreceived:
-		# 	print(str(u.hash))
-		# 	print("~~~~~~~~~~")
+
 		# REDO bootstrap's utxos which are not validated
 		btstrp_public_k = self.ring[0]['public_key']
 		amount = len(self.ring.keys())*100 # number of nodes * 100 NBCs
 		tmp_utxos[btstrp_public_k] = [{"id":0,"to_who":btstrp_public_k,"amount":amount}]
 
-		self.add_block_list_to_chain(chain,blocklist) # to convert dictionaries to block Objects
+		self.add_block_list_to_chain(chain,blocklist)
 
 		if not self.chain_hashes_validation(chain):
 			print("CHAIN HAS INVALID HASHES")
@@ -459,7 +430,7 @@ class Node:
 
 			# REDO block and check its validity
 			if( not self.block_REDO(j,tmp_utxos)):
-				print("Chain invalid!")
+				# print("Chain invalid!")
 				return False,None,None
 
 			pending = tmp_pending
@@ -474,7 +445,7 @@ class Node:
 			tmp_unreceived = unreceived + [t for t in new_trans if t not in pending]
 
 			if( not self.block_REDO(j,tmp_utxos) ):
-				print("___Rest of Chain invalid!")
+				# print("___Rest of Chain invalid!")
 				return False,None,None
 
 			print("ok")
@@ -486,22 +457,12 @@ class Node:
 		self.unreceived_trans = copy.deepcopy(unreceived)
 		self.old_valid = []
 		self.valid_trans = []
-		# print("__PENDING AFTER__")
-		# for p in self.pending_trans:
-		# 	print(str(p.hash))
-		# 	print("~~~~~~~~~~")
-		# print("__UNRECEIVED AFTER__")
-		# for u in self.unreceived_trans:
-		# 	print(str(u.hash))
-		# 	print("~~~~~~~~~~")
 
 		return True, chain, tmp_utxos
 
 
 	def resolve_conflict(self):
 		#resolve correct chain
-		# print('IMAGINE ALL THE PEOPLE')
-		# print('\t\t\tLIVING LIFE IN PEEEEEEACE')
 		max_length = len(self.valid_chain.block_list)
 		max_id = self.id
 		max_ip= self.ring[max_id]['ip']
@@ -545,8 +506,8 @@ class Node:
 			self.wallet.utxos_snapshot = copy.deepcopy(new_utxos)
 			self.valid_chain.block_list = new_blockchain
 			self.validate_pending()
-			print("__Conflict resolved successfully!__")
-			print("__________SO SALLY CAN WAIT__________")
+			# print("__Conflict resolved successfully!__")
+			# print("__________SO SALLY CAN WAIT__________")
 			self.valid_chain.print_chain()
 		except Exception as e:
 			print(f'consensus.{n_id}: {e.__class__.__name__}: {e}')

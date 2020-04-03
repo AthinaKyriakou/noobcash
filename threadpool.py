@@ -11,7 +11,5 @@ class Threadpool:
 		self.executor = ThreadPoolExecutor(NUM_OF_THREADS)
 
 	def submit_task(self, f, tmp, utxos):
-		# print("\n____THREAD STARTING____")
-		# print("submit_task")
 		future = self.executor.submit(f, tmp, utxos)
 		return future
