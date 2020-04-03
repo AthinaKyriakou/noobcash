@@ -327,7 +327,7 @@ class Node:
 		# ----- UNLOCK --------
 			self.broadcast_block(newBlock)
 		else:
-			print('***Mined block invalida will not be broadcasted')
+			print('***Mined block invalid will not be broadcasted')
 		return
 
 
