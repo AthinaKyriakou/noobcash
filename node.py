@@ -388,7 +388,6 @@ class Node:
 		else:
 			lock.release()
 			print('***Mined block invalida will not be broadcasted')
-		return
 
 
 	#Consensus functions
